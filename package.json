@@ -38,7 +38,7 @@
     "@types/jsonwebtoken": "^9.0.5",
     "@types/node": "^20.0.0",
     "@types/supertest": "^6.0.2",
-    "@typescript-eslint/eslint-plugin": "^6.18.1",
+    "@typescript-eslint/eslint-plugin": "^8.19.1",
     "@typescript-eslint/parser": "^6.18.1",
     "env-cmd": "^10.1.0",
     "eslint": "^8.56.0",
