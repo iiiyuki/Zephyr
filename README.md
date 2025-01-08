@@ -1,7 +1,5 @@
 # Zephyr Central Server
 
-[![License](https://img.shields.io/github/license/saluki/nestjs-template.svg)](https://github.com/saluki/nestjs-template/blob/master/LICENSE)
-
 - Crafted for Docker environments (Dockerfile support and environment variables)
 - REST API with [Prisma](https://www.prisma.io/) support
 - Swagger documentation, [Joi](https://github.com/hapijs/joi) validation, Winston logger, ...
@@ -130,7 +128,7 @@ A healthcheck API is a REST endpoint that can be used to validate the status of 
 The healthcheck API endpoint internally triggers an overall health check of the service. This can include database
 connection checks, system properties, disk availability and memory availability.
 
-The example healthcheck endpoint can be request with the token located in the `HEALTH_TOKEN` environment variable.
+The example healthcheck endpoint can be request with the token located in the `HEALTH_CHECK_TOKEN` environment variable.
 
 ```sh
 curl -H 'Authorization: Bearer ThisMustBeChanged' http://localhost:3000/api/v1/health
