@@ -7,17 +7,6 @@ on:
     branches: [ '*' ]
 
 jobs:
-  auto-approve:
-    name: Auto-approve
-    if: ${{ github.actor == 'dependabot[bot]' || github.actor == 'renovate[bot]' || github.actor == 'binaryYuki' }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Auto-approve PR
-        uses: hmarr/auto-approve-action@v4
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          review-message: "LGTM! 🚀"
-
   metrics:
     name: Metrics
     runs-on: ubuntu-latest
@@ -43,8 +32,3 @@ jobs:
 
       - name: Run tests
         run: bun run test
-
-      - name: SonarQube Scan
-        uses: sonarsource/sonarcloud-github-action@<action version> # Ex: v4.0.0, See the latest version at https://github.com/marketplace/actions/sonarcloud-scan
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
