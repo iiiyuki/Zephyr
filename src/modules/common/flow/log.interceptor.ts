@@ -44,7 +44,7 @@ export class LogInterceptor implements NestInterceptor {
 
     private hasStatus(err: unknown): err is { status: number } {
         return (err as { status: number })?.status !== undefined && typeof (err as {
-            status: number
+            status: number;
         }).status === 'number';
     }
 
