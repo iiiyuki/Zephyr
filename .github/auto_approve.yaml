@@ -3,11 +3,19 @@ name: Auto approve
 
 on: pull_request_target
 jobs:
-  auto-approve:
-    if: github.actor == 'dependabot[bot]' || github.actor == 'renovate[bot]' || github.actor == 'binaryYuki'
+  auto-approve-bots:
+    if: github.actor == 'dependabot[bot]' || github.actor == 'renovate[bot]'
     runs-on: ubuntu-latest
     steps:
       - uses: hmarr/auto-approve-action@v4
         with:
           github-token: ${{ secrets.GH_TOKEN }}
-          review-message: "LGTM! 🚀"
+          review-message: "Approved. Type: dependency update"
+  auto-approve-user:
+    if: github.actor == 'binaryYuki'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: hmarr/auto-approve-action@v4
+        with:
+          github-token: ${{ secrets.GH_TOKEN }}
+          review-message: "LGTM"
