@@ -10,7 +10,7 @@ jobs:
   metrics:
     name: Metrics
     runs-on: ubuntu-latest
-    if: ${{ github.actor != 'dependabot[bot]' || github.actor != 'renovate[bot]'}}
+    if: ${{ github.actor != 'dependabot[bot]' || github.actor != 'renovate[bot]' || github.actor!='dependabot'}}
     strategy:
       matrix:
         node-version: [ 20.x ]
