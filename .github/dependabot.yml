@@ -10,3 +10,4 @@ updates:
     schedule:
       interval: "weekly"
       timezone: "Europe/London"
+      time: "24:00"
