@@ -24,7 +24,7 @@
     "@nestjs/platform-fastify": "^10.4.15",
     "@nestjs/swagger": "^7.4.2",
     "@nestjs/terminus": "^10.2.0",
-    "@nestjs/testing": "^10.3.0",
+    "@nestjs/testing": "^10.4.15",
     "@prisma/client": "^5.8.0",
     "fastify": "^4.25.2",
     "joi": "^17.11.0",
