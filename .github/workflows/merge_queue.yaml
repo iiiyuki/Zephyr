@@ -1,0 +1,14 @@
+name: comment when ready
+on:
+  merge_group:
+
+jobs:
+  comment:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - uses: JoseThen/comment-pr@v1.2.0
+        with:
+          comment: 'This PR has entered the merge queue! Thanks for your contribution! 🚀'
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

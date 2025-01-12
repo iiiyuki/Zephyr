@@ -2,7 +2,9 @@
 .vertx/
 
 ### Eclipse ###
-
+build
+.gradle
+.idea
 .metadata
 bin/
 tmp/
