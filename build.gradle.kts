@@ -38,6 +38,7 @@ dependencies {
   implementation("io.vertx:vertx-web-openapi-router")
   implementation("io.vertx:vertx-web-api-contract")
   implementation("io.vertx:vertx-tcp-eventbus-bridge")
+  implementation("com.baomidou:mybatis-plus:3.5.10.1")
   testImplementation("io.vertx:vertx-junit5")
   testImplementation("org.junit.jupiter:junit-jupiter:$junitJupiterVersion")
 }
