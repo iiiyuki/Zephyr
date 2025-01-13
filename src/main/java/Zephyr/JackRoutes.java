@@ -5,6 +5,9 @@ import io.vertx.ext.web.RoutingContext;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 
+/**
+ * @author Jingyu Wang
+ */
 public class JackRoutes {
 
   private final Vertx vertx;

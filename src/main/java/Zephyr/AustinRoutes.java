@@ -5,6 +5,9 @@ import io.vertx.ext.web.RoutingContext;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 
+/**
+ * @author Austin Ma
+ */
 public class AustinRoutes {
 
   private final Vertx vertx;
