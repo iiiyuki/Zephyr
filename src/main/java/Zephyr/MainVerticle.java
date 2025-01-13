@@ -2,6 +2,7 @@ package Zephyr;
 
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Promise;
+import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 
 public class MainVerticle extends AbstractVerticle {
@@ -21,11 +22,15 @@ public class MainVerticle extends AbstractVerticle {
 
     // 设置全局错误处理器
     router.errorHandler(500, ctx -> {
+      JsonObject error = new JsonObject()
+        .put("error", "Internal Server Error")
+        .put("success", false);
       if (!ctx.response().ended()) {
         ctx.response()
           .setStatusCode(500)
           .putHeader("Content-Type", "application/json")
           .end("{\"error\": \"Internal Server Error\"}");
+
       }
     });
 
