@@ -1,9 +1,12 @@
 package Zephyr;
 
+import io.vertx.ext.web.FileUpload;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
+import io.vertx.ext.web.handler.BodyHandler;
+import java.util.*;
 
 public class JackRoutes {
 
@@ -24,6 +27,13 @@ public class JackRoutes {
     // 定义 "/api/jack/info" 路径
     router.route("/info").handler(this::handleInfo);
 
+    router.route().handler(BodyHandler.create());
+
+    router.post("/descriptionCheck").handler(ctx ->{
+      List<FileUpload> txtForCheck = ctx.fileUploads();
+    });
+
+
     return router;
   }
 
@@ -31,7 +41,7 @@ public class JackRoutes {
   private void handleRoot(RoutingContext ctx) {
     JsonObject response = new JsonObject()
       .put("status", "ok")
-      .put("message", "Welcome to Jack's API root path!")
+      .put("message", "ready")
       .put("timestamp", System.currentTimeMillis());
 
     ctx.response()
@@ -51,3 +61,5 @@ public class JackRoutes {
       .end(response.encode());
   }
 }
+
+
