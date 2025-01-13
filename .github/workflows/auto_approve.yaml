@@ -10,4 +10,4 @@ jobs:
       - uses: hmarr/auto-approve-action@v4
         with:
           github-token: ${{ secrets.TOKEN }}
-          review-message: "LGTM! 🚀"
+          review-message: "It seems like this PR doesn't need a review. I'll approve it for you! 🚀"
