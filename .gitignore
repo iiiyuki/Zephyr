@@ -5,6 +5,7 @@
 build
 .gradle
 .idea
+.idea/*
 .metadata
 bin/
 tmp/
@@ -156,7 +157,6 @@ buildNumber.properties
 !/.mvn/wrapper/maven-wrapper.jar
 
 ### Gradle ###
-.gradle
 /buildTool/
 
 # Ignore Gradle GUI config
