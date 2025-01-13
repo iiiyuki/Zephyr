@@ -3,12 +3,8 @@ package Zephyr;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Promise;
 import io.vertx.core.json.JsonObject;
-import io.vertx.ext.web.Route;
 import io.vertx.ext.web.Router;
 
-/**
- * @author binaryYuki
- */
 public class MainVerticle extends AbstractVerticle {
 
   @Override
