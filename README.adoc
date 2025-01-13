@@ -1,9 +1,3 @@
-= Starter
-
-image:https://img.shields.io/badge/vert.x-4.5.11-purple.svg[link="https://vertx.io"]
-
-This application was generated using http://start.vertx.io
-
 == Building
 
 To launch your tests:
