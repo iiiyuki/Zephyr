@@ -5,6 +5,8 @@ import io.vertx.core.Promise;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 
+import java.util.UUID;
+
 /**
  * Main Verticle for the application
  * @author binaryYuki
