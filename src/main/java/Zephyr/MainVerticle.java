@@ -80,6 +80,12 @@ public class MainVerticle extends AbstractVerticle {
         .put("error", "Server Side Error")
         .put("message", ctx.failure() != null ? ctx.failure().getMessage() : "Unknown error");
       if (!ctx.response().ended()) {
+        ctx.response()
+          .setStatusCode(500)
+          .putHeader("Content-Type", "application/json")
+          .end(error.encode());
+      }
+    });
 
     // 404 errors
     router.errorHandler(404, ctx -> {
@@ -108,7 +114,7 @@ public class MainVerticle extends AbstractVerticle {
           .end(error.encode());
       }
     });
-        
+
     // 401 Unauthorized
     router.errorHandler(401, ctx -> {
       JsonObject error = new JsonObject()
