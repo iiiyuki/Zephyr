@@ -39,7 +39,9 @@ dependencies {
   implementation("io.vertx:vertx-web-api-contract")
   implementation("io.vertx:vertx-tcp-eventbus-bridge")
   implementation("io.vertx:vertx-mysql-client:4.5.11")
+  implementation("org.flywaydb:flyway-core:9.0.0")
   implementation("io.github.cdimascio:dotenv-java:3.1.0")
+  implementation("io.netty:netty-all:4.1.68.Final")
   testImplementation("io.vertx:vertx-junit5")
   testImplementation("org.junit.jupiter:junit-jupiter:$junitJupiterVersion")
 }
@@ -63,7 +65,6 @@ tasks.withType<Test> {
     events = setOf(PASSED, SKIPPED, FAILED)
   }
 }
-
 tasks.withType<JavaExec> {
   args = listOf("run", mainVerticleName, "--redeploy=$watchForChange", "--launcher-class=$launcherClassName", "--on-redeploy=$doOnChange")
 }
