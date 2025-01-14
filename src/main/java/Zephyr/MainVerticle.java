@@ -5,8 +5,6 @@ import io.vertx.core.Promise;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 
-import java.util.UUID;
-
 /**
  * Main Verticle for the application
  * @author binaryYuki
@@ -70,11 +68,10 @@ public class MainVerticle extends AbstractVerticle {
     // Mount sub-routers to "/api/jack" and "/api/austin"
     router.route("/api/jack/*").subRouter(jackRoutes.getSubRouter());
     router.route("/api/austin/*").subRouter(austinRoutes.getSubRouter());
-    router.route("/api").handler(ctx -> {
-      ctx.response()
-        .putHeader("Content-Type", "application/json")
-        .end(new JsonObject().put("message", "success").encode());
-    });
+    router.route("/api/v1/*").subRouter(new YukiRoutes(vertx).getSubRouter());
+    router.route("/api").handler(ctx -> ctx.response()
+      .putHeader("Content-Type", "application/json")
+      .end(new JsonObject().put("message", "success").encode()));
 
     // Set up global error handlers
     setupErrorHandlers(router);
