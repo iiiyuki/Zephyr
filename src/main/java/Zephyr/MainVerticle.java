@@ -3,33 +3,81 @@ package Zephyr;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Promise;
 import io.vertx.core.json.JsonObject;
-import io.vertx.ext.web.Route;
 import io.vertx.ext.web.Router;
 
 /**
+ * Main Verticle for the application
  * @author binaryYuki
  */
 public class MainVerticle extends AbstractVerticle {
 
   @Override
-  public void start(Promise<Void> startPromise) throws Exception {
-    // 创建主 Router
+  public void start(Promise<Void> startPromise) {
+    // Initialize dbHelper with Vertx instance
+    dbHelper db = new dbHelper(vertx);
+
+    // Initialize the database (create table if not exists)
+    db.init(ar -> {
+      if (ar.succeeded()) {
+        System.out.println("Database initialized successfully.");
+        setupHttpServer(startPromise, db);
+      } else {
+        System.err.println("Failed to initialize database: " + ar.cause().getMessage());
+        startPromise.fail(ar.cause());
+      }
+    });
+  }
+
+  private void setupHttpServer(Promise<Void> startPromise, dbHelper db) {
+    // Create the main Router
     Router router = Router.router(vertx);
 
-    // 创建 Jack 和 Austin 的路由实例
+    // Create Jack and Austin route instances
     JackRoutes jackRoutes = new JackRoutes(vertx);
     AustinRoutes austinRoutes = new AustinRoutes(vertx);
 
-    // 挂载子路由到 "/api/jack" 和 "/api/austin"
+    // Mount sub-routers to "/api/jack" and "/api/austin"
     router.route("/api/jack/*").subRouter(jackRoutes.getSubRouter());
     router.route("/api/austin/*").subRouter(austinRoutes.getSubRouter());
 
-    // 设置全局错误处理器
+    // Set up global error handlers
+    setupErrorHandlers(router);
+
+    // Health check endpoint
+    router.route("/healthz").handler(ctx -> {
+      // Optional: Check database connection status dynamically
+      db.getClient().query("SELECT 1").execute(ar -> {
+        if (ar.succeeded()) {
+          ctx.response()
+            .putHeader("Content-Type", "application/json")
+            .end("{\"status\": \"ok\"}");
+        } else {
+          ctx.response()
+            .setStatusCode(500)
+            .putHeader("Content-Type", "application/json")
+            .end("{\"status\": \"error\", \"message\": \"Database connection failed\"}");
+        }
+      });
+    });
+
+    // Create HTTP server and bind the router
+    vertx.createHttpServer().requestHandler(router).listen(8888).onComplete(http -> {
+      if (http.succeeded()) {
+        startPromise.complete();
+        System.out.println("HTTP server started on port 8888");
+      } else {
+        startPromise.fail(http.cause());
+      }
+    });
+  }
+
+  private void setupErrorHandlers(Router router) {
+    // 500 Internal Server Error
     router.errorHandler(500, ctx -> {
       JsonObject error = new JsonObject()
         .put("success", false)
         .put("error", "Server Side Error")
-        .put("message", ctx.failure().getMessage());
+        .put("message", ctx.failure() != null ? ctx.failure().getMessage() : "Unknown error");
       if (!ctx.response().ended()) {
         ctx.response()
           .setStatusCode(500)
@@ -38,7 +86,7 @@ public class MainVerticle extends AbstractVerticle {
       }
     });
 
-    // 404 errors
+    // 404 Not Found
     router.errorHandler(404, ctx -> {
       JsonObject error = new JsonObject()
         .put("success", false)
@@ -52,7 +100,7 @@ public class MainVerticle extends AbstractVerticle {
       }
     });
 
-    // 401
+    // 401 Unauthorized
     router.errorHandler(401, ctx -> {
       JsonObject error = new JsonObject()
         .put("success", false)
@@ -66,7 +114,7 @@ public class MainVerticle extends AbstractVerticle {
       }
     });
 
-    // 403
+    // 403 Forbidden
     router.errorHandler(403, ctx -> {
       JsonObject error = new JsonObject()
         .put("success", false)
@@ -80,7 +128,7 @@ public class MainVerticle extends AbstractVerticle {
       }
     });
 
-    // 400
+    // 400 Bad Request
     router.errorHandler(400, ctx -> {
       JsonObject error = new JsonObject()
         .put("success", false)
@@ -91,23 +139,6 @@ public class MainVerticle extends AbstractVerticle {
           .setStatusCode(400)
           .putHeader("Content-Type", "application/json")
           .end(error.encode());
-      }
-    });
-
-    // healthz
-    router.route("/healthz").handler(ctx -> {
-      ctx.response()
-        .putHeader("Content-Type", "application/json")
-        .end("{\"status\": \"ok\"}");
-    });
-
-    // 创建 HTTP 服务器并绑定路由器
-    vertx.createHttpServer().requestHandler(router).listen(8888).onComplete(http -> {
-      if (http.succeeded()) {
-        startPromise.complete();
-        System.out.println("HTTP server started on port 8888");
-      } else {
-        startPromise.fail(http.cause());
       }
     });
   }
