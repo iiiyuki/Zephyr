@@ -71,6 +71,7 @@ public class MainVerticle extends AbstractVerticle {
     });
   }
 
+
   private void setupErrorHandlers(Router router) {
     // 500 Internal Server Error
     router.errorHandler(500, ctx -> {
@@ -79,14 +80,8 @@ public class MainVerticle extends AbstractVerticle {
         .put("error", "Server Side Error")
         .put("message", ctx.failure() != null ? ctx.failure().getMessage() : "Unknown error");
       if (!ctx.response().ended()) {
-        ctx.response()
-          .setStatusCode(500)
-          .putHeader("Content-Type", "application/json")
-          .end(error.encode());
-      }
-    });
 
-    // 404 Not Found
+    // 404 errors
     router.errorHandler(404, ctx -> {
       JsonObject error = new JsonObject()
         .put("success", false)
@@ -100,6 +95,20 @@ public class MainVerticle extends AbstractVerticle {
       }
     });
 
+    // 403
+    router.errorHandler(403, ctx -> {
+      JsonObject error = new JsonObject()
+        .put("success", false)
+        .put("error", "Forbidden")
+        .put("message", "You do not have permission to access this resource.");
+      if (!ctx.response().ended()) {
+        ctx.response()
+          .setStatusCode(403)
+          .putHeader("Content-Type", "application/json")
+          .end(error.encode());
+      }
+    });
+        
     // 401 Unauthorized
     router.errorHandler(401, ctx -> {
       JsonObject error = new JsonObject()
@@ -114,21 +123,7 @@ public class MainVerticle extends AbstractVerticle {
       }
     });
 
-    // 403 Forbidden
-    router.errorHandler(403, ctx -> {
-      JsonObject error = new JsonObject()
-        .put("success", false)
-        .put("error", "Forbidden")
-        .put("message", "You do not have permission to access this resource.");
-      if (!ctx.response().ended()) {
-        ctx.response()
-          .setStatusCode(403)
-          .putHeader("Content-Type", "application/json")
-          .end(error.encode());
-      }
-    });
-
-    // 400 Bad Request
+    // 400
     router.errorHandler(400, ctx -> {
       JsonObject error = new JsonObject()
         .put("success", false)
