@@ -27,7 +27,8 @@ public class YukiRoutes {
     // 定义 "/api/v1/status" 路径
     router.route("/status").handler(this::handleStatus);
 
-    return router;
+    // 定义 "/api/v1/relay" 路径
+    router.route("/relay").handler(this::testRelay)
   }
 
   // 处理 "/api/v1/healthz" 路径的逻辑
@@ -52,5 +53,22 @@ public class YukiRoutes {
     ctx.response()
       .putHeader("Content-Type", "application/json")
       .end(response.encode());
+  }
+
+  // test relay route
+  public void testRelay(RoutingContext ctx) {
+    // wait for 2 secs
+    try {
+      Thread.sleep(2000);
+      JsonObject response = new JsonObject()
+        .put("status", "ok")
+        .put("timestamp", System.currentTimeMillis());
+      ctx.response()
+        .putHeader("Content-Type", "application/json")
+        .end(response.encode());
+    } catch (InterruptedException ex) {
+      ctx.fail(500);
+      throw new RuntimeException(ex);
+    }
   }
 }
