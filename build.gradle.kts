@@ -39,7 +39,7 @@ dependencies {
   implementation("io.vertx:vertx-web-api-contract")
   implementation("io.vertx:vertx-tcp-eventbus-bridge")
   implementation("io.vertx:vertx-mysql-client:4.5.11")
-  implementation("org.flywaydb:flyway-core:9.22.3")
+  implementation("org.flywaydb:flyway-core:11.1.1")
   implementation("io.github.cdimascio:dotenv-java:3.1.0")
   implementation("io.netty:netty-all:4.1.68.Final")
   testImplementation("io.vertx:vertx-junit5")
