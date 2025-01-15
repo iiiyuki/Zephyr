@@ -11,12 +11,12 @@ on:
 
 jobs:
   code-cov:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - name: codecov
         uses: codecov/codecov-action@v5.1.2
   qodana-check:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     needs: code-cov
     permissions:
       contents: write
