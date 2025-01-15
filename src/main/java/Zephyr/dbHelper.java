@@ -53,7 +53,6 @@ public class dbHelper {
                 is_deleted BOOLEAN
             );
         """;
-
     // Execute the query asynchronously
     client.query(createTableSQL).execute(ar -> {
       if (ar.succeeded()) {
