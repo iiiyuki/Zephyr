@@ -36,31 +36,12 @@ public class MainVerticle extends AbstractVerticle {
 
     // 添加 requestId 和 process time 中间件
     router.route().handler(ctx -> {
+
       // 生成 requestId 长度：16位
       String requestId = IdGenerator.generateRequestId();
 
-      // 记录开始时间
-      long startTime = System.nanoTime();
-      ctx.put("startTime", startTime);
-
       // 设置响应头中的 requestId
       ctx.response().putHeader("X-Request-Id", requestId);
-
-      // 调用下一个处理器
-      ctx.next();
-    });
-
-// 添加全局结束中间件，计算处理时间
-    router.route().handler(ctx -> {
-      // 检查响应是否已经结束
-      if (!ctx.response().ended()) {
-        // 计算处理时间
-        long startTime = ctx.get("startTime");
-        long processTime = System.nanoTime() - startTime;
-
-        // 将处理时间添加到响应头中
-        ctx.response().putHeader("X-Process-Time", processTime / 1_000_000 + "ms");
-      }
 
       // 调用下一个处理器
       ctx.next();
