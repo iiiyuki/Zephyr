@@ -1,0 +1,46 @@
+# 自动批准 PR 和 Qodana 检查的 GitHub Actions 工作流
+name: Auto Approve and Qodana Check
+
+on:
+  pull_request_target:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+      - 'releases/*' # 适用于发布分支
+
+jobs:
+  qodana-check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      checks: write
+    steps:
+      # 检出代码
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.sha }} # 检出 PR 的实际提交
+          fetch-depth: 0
+
+      # 运行 Qodana 扫描
+      - name: Qodana Scan
+        uses: JetBrains/qodana-action@v2024.3
+        with:
+          pr-mode: false
+        env:
+          QODANA_TOKEN: ${{ secrets.QODANA_TOKEN }}
+          QODANA_ENDPOINT: 'https://qodana.cloud'
+
+  auto-approve:
+    # 只有在 Qodana 检查成功时才运行自动批准
+    needs: qodana-check
+    if: github.actor == 'dependabot[bot]' || github.actor == 'renovate[bot]' || github.actor == 'binaryYuki'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Auto Approve PR
+        uses: hmarr/auto-approve-action@v4
+        with:
+          github-token: ${{ secrets.TOKEN }}
+          review-message: "It seems like this PR doesn't need a review. I'll approve it for you! 🚀"
