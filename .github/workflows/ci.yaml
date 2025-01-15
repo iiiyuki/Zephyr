@@ -10,8 +10,14 @@ on:
       - 'releases/*' # 适用于发布分支
 
 jobs:
+  code-cov:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: codecov
+        uses: codecov/codecov-action@v5.1.2
   qodana-check:
     runs-on: ubuntu-22.04
+    needs: code-cov
     permissions:
       contents: write
       pull-requests: write
@@ -50,7 +56,6 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      # 设置 Gradle
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4 # 使用最新的 v4 版本
 
