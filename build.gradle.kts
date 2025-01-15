@@ -4,7 +4,7 @@ import org.gradle.api.tasks.testing.logging.TestLogEvent.*
 plugins {
   java
   application
-  id("com.github.johnrengelman.shadow") version "7.1.2"
+  id("com.github.johnrengelman.shadow") version "8.1.1"
 }
 
 group = "xyz.tzpro.core"
@@ -15,7 +15,7 @@ repositories {
 }
 
 val vertxVersion = "4.5.11"
-val junitJupiterVersion = "5.9.1"
+val junitJupiterVersion = "5.11.4"
 
 val mainVerticleName = "Zephyr.MainVerticle"
 val launcherClassName = "io.vertx.core.Launcher"
@@ -39,9 +39,9 @@ dependencies {
   implementation("io.vertx:vertx-web-api-contract")
   implementation("io.vertx:vertx-tcp-eventbus-bridge")
   implementation("io.vertx:vertx-mysql-client:4.5.11")
-  implementation("org.flywaydb:flyway-core:9.0.0")
+  implementation("org.flywaydb:flyway-core:11.1.1")
   implementation("io.github.cdimascio:dotenv-java:3.1.0")
-  implementation("io.netty:netty-all:4.1.68.Final")
+  implementation("io.netty:netty-all:4.1.117.Final")
   testImplementation("io.vertx:vertx-junit5")
   testImplementation("org.junit.jupiter:junit-jupiter:$junitJupiterVersion")
 }
