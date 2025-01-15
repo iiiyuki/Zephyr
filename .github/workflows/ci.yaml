@@ -60,8 +60,11 @@ jobs:
       - name: Verify Java installation
         run: java -version
 
+      - name: check bash
+        run: bash --version
+
       - name: Build with Gradle
-        run: ./gradlew build --no-daemon
+        run: bash gradlew build --no-daemon
 
       # 上传构建生成的工件（artifact）
       - name: Upload build artifacts
