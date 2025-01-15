@@ -21,32 +21,17 @@ public class AustinRoutes {
   public Router getSubRouter() {
     Router router = Router.router(vertx);
 
-    // 定义 "/api/austin/healthz" 路径
-    router.route("/healthz").handler(this::handleHealthz);
-
     // 定义 "/api/austin/status" 路径
     router.route("/status").handler(this::handleStatus);
 
     return router;
   }
 
-  // 处理 "/api/austin/healthz" 路径的逻辑
-  private void handleHealthz(RoutingContext ctx) {
-    JsonObject response = new JsonObject()
-      .put("status", "ok")
-      .put("message", "Austin's health check is successful!")
-      .put("timestamp", System.currentTimeMillis());
-
-    ctx.response()
-      .putHeader("Content-Type", "application/json")
-      .end(response.encode());
-  }
-
   // 处理 "/api/austin/status" 路径的逻辑
   private void handleStatus(RoutingContext ctx) {
     JsonObject response = new JsonObject()
+      .put("success", true)
       .put("status", "ok")
-      .put("message", "Austin's status is good!")
       .put("timestamp", System.currentTimeMillis());
 
     ctx.response()

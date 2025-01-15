@@ -1,0 +1,94 @@
+# 自动批准 PR 和 Qodana 检查的 GitHub Actions 工作流
+name: Auto Approve and Qodana Check
+
+on:
+  pull_request_target:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - 'releases/*' # 适用于发布分支
+
+jobs:
+  code-cov:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: codecov
+        uses: codecov/codecov-action@v5.1.2
+  qodana-check:
+    runs-on: ubuntu-22.04
+    needs: code-cov
+    permissions:
+      contents: write
+      pull-requests: write
+      checks: write
+    steps:
+      # 检出代码
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.sha }} # 检出 PR 的实际提交
+          fetch-depth: 0
+
+      # 运行 Qodana 扫描
+      - name: Qodana Scan
+        uses: JetBrains/qodana-action@v2024.3
+        with:
+          pr-mode: false
+        env:
+          QODANA_TOKEN: ${{ secrets.QODANA_TOKEN }}
+          QODANA_ENDPOINT: 'https://qodana.cloud'
+
+  gradle-build:
+    runs-on: ubuntu-latest
+    steps:
+      # 检出代码
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }} # 检出 PR 的实际提交
+          fetch-depth: 0 # 拉取完整的提交历史
+
+      # 设置 JDK 23 环境
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4 # 使用最新的 v4 版本
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x ./gradlew
+
+      - name: Verify Java installation
+        run: java -version
+
+      - name: check bash
+        run: bash --version
+
+      - name: Build with Gradle
+        run: bash gradlew build # 使用 Gradle 构建项目
+
+      # 上传构建生成的工件（artifact）
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: xyz.tzpro.Zephyr # 工件名称
+          path: build/libs # 指定构建产物路径
+
+  auto-approve:
+    # 只有在 Qodana 检查成功时才运行自动批准
+    needs:
+      - qodana-check
+      - gradle-build
+    if: github.actor == 'dependabot[bot]' || github.actor == 'renovate[bot]' || github.actor == 'binaryYuki' || github.actor == 'Austin-152'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Auto Approve PR
+        uses: hmarr/auto-approve-action@v4
+        with:
+          github-token: ${{ secrets.TOKEN }}
+          review-message: "It seems your pr has passed all tests. I'll approve it for you! 🚀"
+

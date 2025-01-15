@@ -8,6 +8,9 @@ import io.vertx.sqlclient.Pool;
 import io.vertx.sqlclient.PoolOptions;
 import io.github.cdimascio.dotenv.Dotenv;
 
+/**
+ * @author binaryYuki
+ */
 public class dbHelper {
   private final Pool client;
 
@@ -53,7 +56,6 @@ public class dbHelper {
                 is_deleted BOOLEAN
             );
         """;
-
     // Execute the query asynchronously
     client.query(createTableSQL).execute(ar -> {
       if (ar.succeeded()) {
