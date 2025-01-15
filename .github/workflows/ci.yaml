@@ -64,7 +64,7 @@ jobs:
         run: bash --version
 
       - name: Build with Gradle
-        run: bash gradlew build --no-daemon  # 使用 Gradle 构建项目
+        run: bash gradlew build # 使用 Gradle 构建项目
 
       # 上传构建生成的工件（artifact）
       - name: Upload build artifacts
