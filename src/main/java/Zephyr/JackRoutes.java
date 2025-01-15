@@ -42,6 +42,7 @@ public class JackRoutes {
       .setHandleFileUploads(true)
       .setUploadsDirectory("C:/Users/a1523/Desktop/Zephyr/uploads")
       .setMergeFormAttributes(true));
+    //C:/Users/a1523/Desktop/Zephyr/uploads
 
     router.post("/analyze/text/uploads").handler(ctx -> {
       List<FileUpload> uploads = ctx.fileUploads();
