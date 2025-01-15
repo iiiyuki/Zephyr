@@ -10,8 +10,14 @@ on:
       - 'releases/*' # 适用于发布分支
 
 jobs:
+  code-cov:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: codecov
+        uses: codecov/codecov-action@v5.1.2
   qodana-check:
     runs-on: ubuntu-22.04
+    needs: code-cov
     permissions:
       contents: write
       pull-requests: write
