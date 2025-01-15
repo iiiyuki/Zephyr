@@ -1,12 +1,12 @@
 package Zephyr;
 
 import io.vertx.ext.web.FileUpload;
-import io.vertx.ext.web.RequestBody;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.handler.BodyHandler;
+
 import java.util.*;
 
 public class JackRoutes {
@@ -29,24 +29,23 @@ public class JackRoutes {
     router.route("/info").handler(this::handleInfo);
 
     router.route().handler(BodyHandler.create()
-      .setBodyLimit(100000)
+      .setBodyLimit(50000)
       .setDeleteUploadedFilesOnEnd(true)
       .setHandleFileUploads(true)
-      .setUploadsDirectory("C:/Users/a1523/Desktop/Zephyr/docsUploeaded")
+      .setUploadsDirectory("C:/Users/a1523/Desktop/Zephyr/uploads")
       .setMergeFormAttributes(true));
 
-    router.post("/analyze/text/uploads").handler(ctx -> {
-
+    router.post("/analyze/text/uploads/username").handler(ctx -> {
       List<FileUpload> uploads = ctx.fileUploads();
       for(FileUpload u:uploads){
         if (u.contentType().equals("multipart/form-data")
           &&u.fileName().endsWith(".txt")
           &&u.charSet().equals("UTF-8")
-          &&u.size()<=100000){
-          handleFileUpload(ctx);
+          &&u.size()<=50000){
+          handleFileUpload(ctx, u);
         }
         else{
-          ctx.fail(401);
+          uploads.remove(u);
         }
       }
     });
@@ -78,18 +77,17 @@ public class JackRoutes {
       .end(response.encode());
   }
 
-  private void handleFileUpload(RoutingContext ctx){
-    ctx.fail(400);
-    //JsonObject response = new JsonObject()
-    //.put("status","uploaded")
-    //.put("dir", "")
-    //.put("timestamp", System.currentTimeMillis());
+  private void handleFileUpload(RoutingContext ctx, FileUpload u){
+    JsonObject response = new JsonObject()
+    .put("status","uploaded")
+    .put("dir", "C:\\Users\\a1523\\Desktop\\Zephyr\\uploads" + "\\" + u.fileName())
+    .put("timestamp", System.currentTimeMillis());
 
-    //ctx.response()
-    //.putHeader("Content-Type", "application/json")
-    //.end(response.encode());
-
+    ctx.response()
+    .putHeader("Content-Type", "application/json")
+    .end(response.encode());
   }
 }
+
 
 
