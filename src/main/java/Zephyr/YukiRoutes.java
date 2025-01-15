@@ -28,7 +28,9 @@ public class YukiRoutes {
     router.route("/status").handler(this::handleStatus);
 
     // 定义 "/api/v1/relay" 路径
-    router.route("/relay").handler(this::testRelay)
+    router.route("/relay").handler(this::testRelay);
+
+    return router;
   }
 
   // 处理 "/api/v1/healthz" 路径的逻辑
