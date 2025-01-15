@@ -38,7 +38,7 @@ public class JackRoutes {
     router.post("/analyze/text/uploads/username").handler(ctx -> {
       List<FileUpload> uploads = ctx.fileUploads();
       for(FileUpload u:uploads){
-        if (u.contentType().equals("multipart/form-data")
+        if ("multipart/form-data".equals(u.contentType())
           &&u.fileName().endsWith(".txt")
           &&u.charSet().equals("UTF-8")
           &&u.size()<=50000){
