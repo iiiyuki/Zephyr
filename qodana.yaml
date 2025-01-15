@@ -5,5 +5,13 @@ include:
   - name: CommentedOutCode
   - name: MarkdownDocumentationCommentsMigration
   - name: JsonStandardCompliance
-  - name: CodeStyle
-  - name: TokenSetInParserDefinition
+  - name: ForwardCompatibility
+  - name: ContinueOrBreakFromFinallyBlock
+  - name: ConfigurationAvoidance
+  - name: MultipleRepositoryUrls
+  - name: IncorrectPluginDslStructure
+  - name: ClassInheritanceDepth
+  - name: ConstructorCount
+  - name: ClassNestingDepth
+  - name: BreakStatement
+  - name: ContinueStatementWithLabel

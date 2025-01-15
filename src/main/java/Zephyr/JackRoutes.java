@@ -39,9 +39,9 @@ public class JackRoutes {
 
       List<FileUpload> uploads = ctx.fileUploads();
       for(FileUpload u:uploads){
-        if (u.contentType().equals("multipart/form-data")
+        if ("multipart/form-data".equals(u.contentType())
           &&u.fileName().endsWith(".txt")
-          &&u.charSet().equals("UTF-8")
+          && "UTF-8".equals(u.charSet())
           &&u.size()<=100000){
           handleFileUpload(ctx);
         }
