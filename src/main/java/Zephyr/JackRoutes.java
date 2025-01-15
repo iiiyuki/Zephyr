@@ -9,6 +9,9 @@ import io.vertx.ext.web.handler.BodyHandler;
 
 import java.util.*;
 
+/**
+ * @author Jingyu Wang
+ */
 public class JackRoutes {
 
   private final Vertx vertx;
