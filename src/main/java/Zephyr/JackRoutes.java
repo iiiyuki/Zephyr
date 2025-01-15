@@ -9,6 +9,9 @@ import io.vertx.ext.web.handler.BodyHandler;
 
 import java.util.*;
 
+/**
+ * @author Jingyu Wang
+ */
 public class JackRoutes {
 
   private final Vertx vertx;
@@ -38,7 +41,7 @@ public class JackRoutes {
     router.post("/analyze/text/uploads/username").handler(ctx -> {
       List<FileUpload> uploads = ctx.fileUploads();
       for(FileUpload u:uploads){
-        if (u.contentType().equals("multipart/form-data")
+        if ("multipart/form-data".equals(u.contentType())
           &&u.fileName().endsWith(".txt")
           &&u.charSet().equals("UTF-8")
           &&u.size()<=50000){
