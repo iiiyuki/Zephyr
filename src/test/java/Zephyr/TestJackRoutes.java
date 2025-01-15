@@ -22,7 +22,7 @@ public class TestJackRoutes {
   }
 
   @Test
-  void verticle_deployed(Vertx vertx, VertxTestContext testContext) throws Throwable {
+  void verticle_deployed(VertxTestContext testContext) {
     testContext.completeNow();
   }
 
@@ -30,7 +30,7 @@ public class TestJackRoutes {
   void testRoot(Vertx vertx, VertxTestContext testContext) {
     // 创建 HTTP 客户端并发送 GET 请求到 "/api/jack/"
     vertx.createHttpClient()
-      .request(io.vertx.core.http.HttpMethod.GET, 8888, "127.0.0.1", "/api/jack/")
+      .request(io.vertx.core.http.HttpMethod.GET, 8888, "127.0.0.1", "/api/jack/info")
       .compose(HttpClientRequest::send) // 发送请求
       .onSuccess(resp -> handleResponse(resp, testContext)) // 处理成功响应
       .onFailure(testContext::failNow); // 处理请求失败
@@ -53,10 +53,10 @@ public class TestJackRoutes {
       // 将响应体解析为 JSON 对象
       JsonObject responseJson = body.toJsonObject();
 
-      // should be {"success":true,"status":"ok","timestamp":1736940859504}
+      // should be {"status":"ok","message":"This is Jack's info endpoint!","timestamp":1736972790315}
       // 验证响应内容
-      assertEquals(true, responseJson.getBoolean("success"), "Success should be true");
       assertEquals("ok", responseJson.getString("status"), "Status should be 'ok'");
+      assertEquals("This is Jack's info endpoint!", responseJson.getString("message"), "Message should be 'This is Jack's info endpoint!'");
 
       // 验证时间戳是否存在
       assertNotNull(responseJson.getLong("timestamp"), "Timestamp should not be null");

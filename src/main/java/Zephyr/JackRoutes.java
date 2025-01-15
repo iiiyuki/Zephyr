@@ -24,7 +24,7 @@ public class JackRoutes {
   public Router getSubRouter() {
     Router router = Router.router(vertx);
 
-    // 定义 "/api/jack/" 路径
+    // 定义 "/api/jack" 路径
     router.route("/").handler(this::handleRoot);
 
     // 定义 "/api/jack/info" 路径
@@ -56,7 +56,7 @@ public class JackRoutes {
     return router;
   }
 
-  // 处理 "/api/jack/" 路径的逻辑
+  // 处理 "/api/jack" 路径的逻辑
   private void handleRoot(RoutingContext ctx) {
     JsonObject response = new JsonObject()
       .put("status", "ok")
