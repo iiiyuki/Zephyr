@@ -36,7 +36,7 @@ jobs:
   auto-approve:
     # 只有在 Qodana 检查成功时才运行自动批准
     needs: qodana-check
-    if: github.actor == 'dependabot[bot]' || github.actor == 'renovate[bot]' || github.actor == 'binaryYuki'
+    if: github.actor == 'dependabot[bot]' || github.actor == 'renovate[bot]' || github.actor == 'binaryYuki' || github.actor == 'Austin-152'
     runs-on: ubuntu-latest
     steps:
       - name: Auto Approve PR

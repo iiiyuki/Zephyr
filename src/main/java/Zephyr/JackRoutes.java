@@ -80,15 +80,6 @@ public class JackRoutes {
 
   private void handleFileUpload(RoutingContext ctx){
     ctx.fail(400);
-    //JsonObject response = new JsonObject()
-    //.put("status","uploaded")
-    //.put("dir", "")
-    //.put("timestamp", System.currentTimeMillis());
-
-    //ctx.response()
-    //.putHeader("Content-Type", "application/json")
-    //.end(response.encode());
-
   }
 }
 

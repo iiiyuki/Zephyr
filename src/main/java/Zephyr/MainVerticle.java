@@ -50,14 +50,17 @@ public class MainVerticle extends AbstractVerticle {
       ctx.next();
     });
 
-    // 添加全局结束中间件，计算处理时间
+// 添加全局结束中间件，计算处理时间
     router.route().handler(ctx -> {
-      // 计算处理时间
-      long startTime = ctx.get("startTime");
-      long processTime = System.nanoTime() - startTime;
+      // 检查响应是否已经结束
+      if (!ctx.response().ended()) {
+        // 计算处理时间
+        long startTime = ctx.get("startTime");
+        long processTime = System.nanoTime() - startTime;
 
-      // 将处理时间添加到响应头中
-      ctx.response().putHeader("X-Process-Time", processTime / 1_000_000 + "ms");
+        // 将处理时间添加到响应头中
+        ctx.response().putHeader("X-Process-Time", processTime / 1_000_000 + "ms");
+      }
 
       // 调用下一个处理器
       ctx.next();
