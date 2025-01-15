@@ -41,7 +41,7 @@ dependencies {
   implementation("io.vertx:vertx-mysql-client:4.5.11")
   implementation("org.flywaydb:flyway-core:9.0.0")
   implementation("io.github.cdimascio:dotenv-java:3.1.0")
-  implementation("io.netty:netty-all:4.1.68.Final")
+  implementation("io.netty:netty-all:4.1.117.Final")
   testImplementation("io.vertx:vertx-junit5")
   testImplementation("org.junit.jupiter:junit-jupiter:$junitJupiterVersion")
 }
