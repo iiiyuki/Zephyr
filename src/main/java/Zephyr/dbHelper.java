@@ -8,6 +8,9 @@ import io.vertx.sqlclient.Pool;
 import io.vertx.sqlclient.PoolOptions;
 import io.github.cdimascio.dotenv.Dotenv;
 
+/**
+ * @author binaryYuki
+ */
 public class dbHelper {
   private final Pool client;
 
