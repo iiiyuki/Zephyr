@@ -1,0 +1,40 @@
+ private boolean processFile(Path path) {
+    List<CharSequence> acceptedSequences = ;
+    String pathName = path.toString();
+    String line;
+    boolean res;
+    try{
+      FileReader reader = new FileReader(pathName);
+      BufferedReader br = new BufferedReader(reader);
+      while((line = br.readLine())!=null){
+        for (CharSequence sequence: acceptedSequences){
+
+        }
+      }
+    } catch (FileNotFoundException e) {
+      throw new RuntimeException(e);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+
+   @Test
+    void testInfo(Vertx vertx, VertxTestContext testContext) {
+      // 创建 HTTP 客户端并发送 GET 请求到 "/api/jack/info"
+      vertx.createHttpClient()
+        .request(io.vertx.core.http.HttpMethod.GET, 8888, "127.0.0.1", "/api/jack/info")
+        .compose(HttpClientRequest::send) // 发送请求
+        .onSuccess(resp -> handleResponse(resp, testContext)) // 处理成功响应
+        .onFailure(testContext::failNow); // 处理请求失败
+    }
+
+ @Test
+  void testUpload(Vertx vertx, VertxTestContext testContext) {
+    // 创建 HTTP 客户端并发送 GET 请求到 "/api/jack//analyze/text/uploads/username"
+    vertx.createHttpClient()
+      .request(io.vertx.core.http.HttpMethod.POST, 8888, "127.0.0.1", "/api/jack//analyze/text/uploads/username")
+      .compose(HttpClientRequest::send) // 发送请求
+      .onSuccess(resp -> handleResponse(resp, testContext)) // 处理成功响应
+      .onFailure(testContext::failNow); // 处理请求失败
+  }
