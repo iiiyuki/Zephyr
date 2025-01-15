@@ -36,6 +36,26 @@ public class TestJackRoutes {
       .onFailure(testContext::failNow); // 处理请求失败
   }
 
+  @Test
+  void testInfo(Vertx vertx, VertxTestContext testContext) {
+    // 创建 HTTP 客户端并发送 GET 请求到 "/api/jack/info"
+    vertx.createHttpClient()
+            .request(io.vertx.core.http.HttpMethod.GET, 8888, "127.0.0.1", "/api/jack/info")
+            .compose(HttpClientRequest::send) // 发送请求
+            .onSuccess(resp -> handleResponse(resp, testContext)) // 处理成功响应
+            .onFailure(testContext::failNow); // 处理请求失败
+  }
+
+  @Test
+  void testUpload(Vertx vertx, VertxTestContext testContext) {
+    // 创建 HTTP 客户端并发送 POST 请求到 "/api/jack/analyze/text/uploads"
+    vertx.createHttpClient()
+            .request(io.vertx.core.http.HttpMethod.POST, 8888, "127.0.0.1", "/api/jack//analyze/text/uploads")
+            .compose(HttpClientRequest::send) // 发送请求
+            .onSuccess(resp -> handleResponse(resp, testContext)) // 处理成功响应
+            .onFailure(testContext::failNow); // 处理请求失败
+  }
+
   private void handleResponse(HttpClientResponse resp, VertxTestContext testContext) {
     testContext.verify(() -> {
       // 验证 HTTP 状态码

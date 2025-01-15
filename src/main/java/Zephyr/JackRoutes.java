@@ -6,7 +6,12 @@ import io.vertx.ext.web.RoutingContext;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.handler.BodyHandler;
-
+import java.nio.file.Paths;
+import java.nio.file.Path;
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.*;
 
 /**
@@ -38,12 +43,12 @@ public class JackRoutes {
       .setUploadsDirectory("C:/Users/a1523/Desktop/Zephyr/uploads")
       .setMergeFormAttributes(true));
 
-    router.post("/analyze/text/uploads/username").handler(ctx -> {
+    router.post("/analyze/text/uploads").handler(ctx -> {
       List<FileUpload> uploads = ctx.fileUploads();
       for(FileUpload u:uploads){
         if ("multipart/form-data".equals(u.contentType())
           &&u.fileName().endsWith(".txt")
-          &&u.charSet().equals("UTF-8")
+          &&"UTF-8".equals(u.charSet())
           &&u.size()<=50000){
           handleFileUpload(ctx, u);
         }
@@ -89,6 +94,29 @@ public class JackRoutes {
     ctx.response()
     .putHeader("Content-Type", "application/json")
     .end(response.encode());
+  }
+
+  private boolean processFile(Path path) {
+    return true;
+    /** 施工中：1.Path对象的用法？ 2.数据库如何在本路径建表？
+    * List<CharSequence> acceptedSequences = ;
+    * String pathName = path.toString();
+    * String line;
+    * boolean res;
+    * try{
+      FileReader reader = new FileReader(pathName);
+      BufferedReader br = new BufferedReader(reader);
+      while((line = br.readLine())!=null){
+        for (CharSequence sequence: acceptedSequences){
+
+        }
+      }
+    } catch (FileNotFoundException e) {
+      throw new RuntimeException(e);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+     */
   }
 }
 
