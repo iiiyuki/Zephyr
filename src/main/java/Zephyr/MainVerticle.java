@@ -5,13 +5,12 @@ import io.vertx.core.Promise;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 
-import java.util.UUID;
-
 /**
  * Main Verticle for the application
- * @author binaryYuki
  */
 public class MainVerticle extends AbstractVerticle {
+
+  private DatabaseQueue databaseQueue;
 
   @Override
   public void start(Promise<Void> startPromise) {
@@ -28,6 +27,9 @@ public class MainVerticle extends AbstractVerticle {
         startPromise.fail(ar.cause());
       }
     });
+
+    // Initialize DatabaseQueue
+    databaseQueue = new DatabaseQueue(5);
   }
 
   private void setupHttpServer(Promise<Void> startPromise, dbHelper db) {
@@ -68,29 +70,22 @@ public class MainVerticle extends AbstractVerticle {
       JsonObject dbStatus = new JsonObject();
 
       // 执行数据库查询
-      db.getClient().query("SELECT 1").execute(ar -> {
-        if (ar.succeeded()) {
-          // 数据库连接正常
-          dbStatus.put("success", true)
-            .put("message", "Database connection is healthy");
-        } else {
-          // 数据库连接异常
-          dbStatus.put("success", false)
-            .put("message", "Database connection is unhealthy")
-            .put("stackTrace", ar.cause().getMessage());
-        }
+      db.getConnection().createStatement().executeQuery("SELECT 1");
 
-        // 构建最终的响应对象
-        responseObject.put("status", "ok")
-          .put("message", "Health check passed")
-          .put("database", dbStatus)
-          .put("timestamp", System.currentTimeMillis());
+      // 数据库连接正常
+      dbStatus.put("success", true)
+        .put("message", "Database connection is healthy");
 
-        // 在异步回调中发送响应
-        ctx.response()
-          .putHeader("Content-Type", "application/json")
-          .end(responseObject.encode());
-      });
+      // 构建最终的响应对象
+      responseObject.put("status", "ok")
+        .put("message", "Health check passed")
+        .put("database", dbStatus)
+        .put("timestamp", System.currentTimeMillis());
+
+      // 在异步回调中发送响应
+      ctx.response()
+        .putHeader("Content-Type", "application/json")
+        .end(responseObject.encode());
     });
 
     // Create HTTP server and bind the router
@@ -103,7 +98,6 @@ public class MainVerticle extends AbstractVerticle {
       }
     });
   }
-
 
   private void setupErrorHandlers(Router router) {
     // 500 Internal Server Error

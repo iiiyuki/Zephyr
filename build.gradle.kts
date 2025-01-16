@@ -42,6 +42,8 @@ dependencies {
   implementation("org.flywaydb:flyway-core:11.1.1")
   implementation("io.github.cdimascio:dotenv-java:3.1.0")
   implementation("io.netty:netty-all:4.1.117.Final")
+  implementation("org.hibernate:hibernate-core:6.2.6.Final")
+  implementation("com.zaxxer:HikariCP:5.0.1")
   testImplementation("io.vertx:vertx-junit5")
   testImplementation("org.junit.jupiter:junit-jupiter:$junitJupiterVersion")
 }
