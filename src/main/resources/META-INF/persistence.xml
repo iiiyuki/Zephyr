@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<persistence xmlns="http://xmlns.jcp.org/xml/ns/persistence" version="2.2">
+  <persistence-unit name="ZephyrPU">
+    <provider>org.hibernate.reactive.provider.ReactivePersistenceProvider</provider>
+    <class>org.hibernate.reactive.example.session.Author</class>
+    <class>org.hibernate.reactive.example.session.Book</class>
+    <class>Zephyr.entities.Service</class>
+    <properties>
+      <property name="javax.persistence.jdbc.driver" value="com.mysql.cj.jdbc.Driver"/>
+      <property name="javax.persistence.jdbc.url" value="jdbc:mysql://${DB_HOST}:${DB_PORT}/${DB_NAME}"/>
+      <property name="javax.persistence.jdbc.user" value="${DB_USER}"/>
+      <property name="javax.persistence.jdbc.password" value="${DB_PWD}"/>
+      <property name="hibernate.dialect" value="org.hibernate.dialect.MySQL8Dialect"/>
+      <property name="hibernate.hbm2ddl.auto" value="update"/>
+      <property name="hibernate.jdbc.time_zone" value="UTC"/>
+      <property name="hibernate.connection.provider_class" value="org.hibernate.hikaricp.internal.HikariCPConnectionProvider"/>
+      <property name="hibernate.hikari.minimumIdle" value="5"/>
+      <property name="hibernate.hikari.maximumPoolSize" value="10"/>
+      <property name="hibernate.hikari.idleTimeout" value="30000"/>
+      <property name="hibernate.hikari.connectionTimeout" value="20000"/>
+      <property name="hibernate.hikari.maxLifetime" value="1800000"/>
+      <property name="hibernate.cache.use_second_level_cache" value="true"/>
+      <property name="hibernate.cache.use_query_cache" value="true"/>
+      <property name="hibernate.cache.region.factory_class" value="org.hibernate.cache.jcache.JCacheRegionFactory"/>
+      <property name="hibernate.javax.cache.provider" value="org.ehcache.jsr107.EhcacheCachingProvider"/>
+    </properties>
+  </persistence-unit>
+</persistence>
