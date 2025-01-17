@@ -22,7 +22,7 @@ val nettyVersion = "4.1.117.Final"
 val hibernateCoreVersion = "6.6.4.Final"
 val caffeineVersion = "3.2.0"
 val hibernateEntityManagerVersion = "5.6.15.Final"
-val hikariCPVersion = "5.0.1"
+val hikariCPVersion = "5.1.0"
 val mysqlConnectorVersion = "8.0.33"
 
 val mainVerticleName = "Zephyr.MainVerticle"
