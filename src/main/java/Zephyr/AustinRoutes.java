@@ -60,13 +60,15 @@ public class AustinRoutes {
     }
     // 配置 WebClient（类似 httpx）
     WebClientOptions options = new WebClientOptions()
-      .setConnectTimeout(5000) // 设置超时时间
-      .setSsl(true);     // 支持 HTTPS
+       // 设置超时时间
+      .setConnectTimeout(5000)
+      // 支持 HTTPS
+      .setSsl(true);
 
     WebClient client = WebClient.create(vertx, options);
 
     // 创建异步任务
-    Future<Object> task = sendHttpRequest(client, "https://api.qster.top/API/v1/weather/?city="+ city)
+    sendHttpRequest(client, "https://api.qster.top/API/v1/weather/?city=" + city)
       .compose(response -> {
         ctx.response()
           .putHeader("Content-Type", "application/json")
