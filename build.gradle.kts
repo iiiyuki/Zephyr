@@ -38,11 +38,11 @@ dependencies {
   implementation("io.vertx:vertx-web-openapi-router")
   implementation("io.vertx:vertx-web-api-contract")
   implementation("io.vertx:vertx-tcp-eventbus-bridge")
-  implementation("io.vertx:vertx-mysql-client:4.5.11")
+  implementation("io.vertx:vertx-mysql-client:$vertxVersion")
   implementation("org.flywaydb:flyway-core:11.1.1")
   implementation("io.github.cdimascio:dotenv-java:3.1.0")
   implementation("io.netty:netty-all:4.1.117.Final")
-  implementation("io.vertx:vertx-web-client:4.5.11")
+  implementation("io.vertx:vertx-web-client:$vertxVersion")
   testImplementation("io.vertx:vertx-junit5")
   testImplementation("org.junit.jupiter:junit-jupiter:$junitJupiterVersion")
 }
