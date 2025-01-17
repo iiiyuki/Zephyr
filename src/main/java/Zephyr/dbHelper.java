@@ -10,6 +10,8 @@ import org.flywaydb.core.Flyway;
 import jakarta.persistence.*;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Database helper class for managing database connections, ORM, and migrations.
@@ -42,11 +44,16 @@ public class dbHelper {
     // Create the HikariCP data source
     this.dataSource = new HikariDataSource(config);
 
+    Map<String, String> properties = new HashMap<>();
+    properties.put("jakarta.persistence.jdbc.url", dotenv.get("DB_URL"));
+    properties.put("jakarta.persistence.jdbc.user", dotenv.get("DB_USER"));
+    properties.put("jakarta.persistence.jdbc.password", dotenv.get("DB_PASSWORD"));
     // Create the EntityManagerFactory for JPA (Hibernate)
-    this.entityManagerFactory = Persistence.createEntityManagerFactory("ZephyrPU");
+    this.entityManagerFactory = Persistence.createEntityManagerFactory("ZephyrPU", properties);
 
     // Initialize Flyway for database migration
     Flyway flyway = Flyway.configure().dataSource(dataSource).load();
+    flyway.baseline();
     flyway.migrate();
   }
 
