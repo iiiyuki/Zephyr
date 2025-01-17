@@ -47,7 +47,6 @@ dependencies {
   implementation("com.github.ben-manes.caffeine:caffeine:3.1.8")
   implementation("org.hibernate:hibernate-entitymanager:5.6.15.Final")
   implementation("com.zaxxer:HikariCP:5.0.1")
-  // jdbc java.lang.RuntimeException: Failed to get driver instance for jdbcUrl=jdbc:mysql://mysql-12487fa7-anime-akkk.h.aivencloud.com:21121/defaultdb
   implementation("mysql:mysql-connector-java:8.0.27")
   testImplementation("io.vertx:vertx-junit5")
   testImplementation("org.junit.jupiter:junit-jupiter:$junitJupiterVersion")
