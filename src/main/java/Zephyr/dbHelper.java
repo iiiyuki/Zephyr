@@ -1,70 +1,90 @@
 package Zephyr;
 
+import io.github.cdimascio.dotenv.Dotenv;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
-import io.vertx.mysqlclient.MySQLConnectOptions;
-import io.vertx.sqlclient.Pool;
-import io.vertx.sqlclient.PoolOptions;
-import io.github.cdimascio.dotenv.Dotenv;
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
+import org.flywaydb.core.Flyway;
+import jakarta.persistence.*;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
+ * Database helper class for managing database connections, ORM, and migrations.
+ * This class uses HikariCP for connection pooling, Hibernate for ORM, and Flyway for database migrations.
+ * It also loads environment variables using dotenv.
+ *
  * @author binaryYuki
  */
 public class dbHelper {
-  private final Pool client;
+  private final HikariDataSource dataSource;
+  private final EntityManagerFactory entityManagerFactory;
 
+  /**
+   * Constructor for dbHelper.
+   * Initializes HikariCP, Hibernate, and Flyway.
+   *
+   * @author binaryYuki
+   * @param vertx Vertx instance
+   */
   public dbHelper(Vertx vertx) {
     // Load the .env file
     Dotenv dotenv = Dotenv.load();
 
-    // MySQL connection options
-    MySQLConnectOptions connectOptions = new MySQLConnectOptions()
-      .setPort(Integer.parseInt(dotenv.get("DB_PORT")))
-      .setHost(dotenv.get("DB_HOST"))
-      .setDatabase(dotenv.get("DB_NAME"))
-      .setUser(dotenv.get("DB_USER"))
-      .setPassword(dotenv.get("DB_PWD"));
+    // HikariCP configuration
+    HikariConfig config = new HikariConfig();
+    config.setJdbcUrl("jdbc:mysql://" + dotenv.get("DB_HOST") + ":" + dotenv.get("DB_PORT") + "/" + dotenv.get("DB_NAME"));
+    config.setUsername(dotenv.get("DB_USER"));
+    config.setPassword(dotenv.get("DB_PWD"));
+    config.setMaximumPoolSize(5);
 
-    // Pool options
-    PoolOptions poolOptions = new PoolOptions()
-      .setMaxSize(5);
+    // Create the HikariCP data source
+    this.dataSource = new HikariDataSource(config);
 
-    // Create the pooled client using Vertx context
-    this.client = Pool.pool(vertx, connectOptions, poolOptions);
+    Map<String, String> properties = new HashMap<>();
+    properties.put("jakarta.persistence.jdbc.url", dotenv.get("DB_URL"));
+    properties.put("jakarta.persistence.jdbc.user", dotenv.get("DB_USER"));
+    properties.put("jakarta.persistence.jdbc.password", dotenv.get("DB_PASSWORD"));
+    // Create the EntityManagerFactory for JPA (Hibernate)
+    this.entityManagerFactory = Persistence.createEntityManagerFactory("ZephyrPU", properties);
+
+    // Initialize Flyway for database migration
+    Flyway flyway = Flyway.configure().dataSource(dataSource).load();
+    flyway.baseline();
+    flyway.migrate();
   }
 
-  public Pool getClient() {
-    return client;
+  /**
+   * Get a connection from the HikariCP data source.
+   *
+   * @return Connection object
+   * @throws SQLException if a database access error occurs
+   */
+  public Connection getConnection() throws SQLException {
+    return dataSource.getConnection();
   }
 
-  // Asynchronous database initialization
+  /**
+   * Get an EntityManager from the EntityManagerFactory.
+   *
+   * @return EntityManager object
+   */
+  public EntityManager getEntityManager() {
+    return entityManagerFactory.createEntityManager();
+  }
+
+  /**
+   * Asynchronous database initialization.
+   * Flyway migration is already handled in the constructor.
+   *
+   * @param resultHandler Handler for the result of the initialization
+   */
   public void init(Handler<AsyncResult<Void>> resultHandler) {
-    // SQL command to create the table
-    String createTableSQL = """
-            CREATE TABLE IF NOT EXISTS services (
-                id INT PRIMARY KEY,
-                service_name VARCHAR(255),
-                service_description VARCHAR(255),
-                service_version VARCHAR(255),
-                service_status VARCHAR(255),
-                host_id VARCHAR(255),
-                host_name VARCHAR(255),
-                host_ip VARCHAR(255),
-                updated_at TIMESTAMP,
-                created_at TIMESTAMP,
-                is_deleted BOOLEAN
-            );
-        """;
-    // Execute the query asynchronously
-    client.query(createTableSQL).execute(ar -> {
-      if (ar.succeeded()) {
-        System.out.println("Table 'services' created successfully (if not exists).");
-        resultHandler.handle(io.vertx.core.Future.succeededFuture());
-      } else {
-        System.err.println("Failed to create table 'services': " + ar.cause().getMessage());
-        resultHandler.handle(io.vertx.core.Future.failedFuture(ar.cause()));
-      }
-    });
+    // Flyway migration is already handled in the constructor
+    resultHandler.handle(io.vertx.core.Future.succeededFuture());
   }
 }
