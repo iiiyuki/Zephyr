@@ -12,7 +12,7 @@ import jakarta.persistence.*;
  * The name and status fields are required.
  * The description field is optional.
  *
- * Author: binaryYuki
+ * @author binaryYuki
  */
 @Entity
 @Table(name = "services")
