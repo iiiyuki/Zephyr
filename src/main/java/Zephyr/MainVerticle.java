@@ -5,6 +5,8 @@ import io.vertx.core.Promise;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 
+import java.sql.SQLException;
+
 /**
  * Main Verticle for the application
  */
@@ -70,7 +72,11 @@ public class MainVerticle extends AbstractVerticle {
       JsonObject dbStatus = new JsonObject();
 
       // 执行数据库查询
-      db.getConnection().createStatement().executeQuery("SELECT 1");
+      try {
+        db.getConnection().createStatement().executeQuery("SELECT 1");
+      } catch (SQLException e) {
+        throw new RuntimeException(e);
+      }
 
       // 数据库连接正常
       dbStatus.put("success", true)

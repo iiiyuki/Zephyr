@@ -7,9 +7,7 @@ import io.vertx.core.Vertx;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import org.flywaydb.core.Flyway;
-import javax.persistence.EntityManager;
-import javax.persistence.EntityManagerFactory;
-import javax.persistence.Persistence;
+import jakarta.persistence.*;
 import java.sql.Connection;
 import java.sql.SQLException;
 
@@ -17,7 +15,7 @@ import java.sql.SQLException;
  * Database helper class for managing database connections, ORM, and migrations.
  * This class uses HikariCP for connection pooling, Hibernate for ORM, and Flyway for database migrations.
  * It also loads environment variables using dotenv.
- * 
+ *
  * @author binaryYuki
  */
 public class dbHelper {
@@ -27,7 +25,7 @@ public class dbHelper {
   /**
    * Constructor for dbHelper.
    * Initializes HikariCP, Hibernate, and Flyway.
-   * 
+   *
    * @param vertx Vertx instance
    */
   public dbHelper(Vertx vertx) {
@@ -54,7 +52,7 @@ public class dbHelper {
 
   /**
    * Get a connection from the HikariCP data source.
-   * 
+   *
    * @return Connection object
    * @throws SQLException if a database access error occurs
    */
@@ -64,7 +62,7 @@ public class dbHelper {
 
   /**
    * Get an EntityManager from the EntityManagerFactory.
-   * 
+   *
    * @return EntityManager object
    */
   public EntityManager getEntityManager() {
@@ -74,7 +72,7 @@ public class dbHelper {
   /**
    * Asynchronous database initialization.
    * Flyway migration is already handled in the constructor.
-   * 
+   *
    * @param resultHandler Handler for the result of the initialization
    */
   public void init(Handler<AsyncResult<Void>> resultHandler) {

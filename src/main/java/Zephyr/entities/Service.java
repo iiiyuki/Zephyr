@@ -1,6 +1,7 @@
 package Zephyr.entities;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
+
 
 /**
  * Entity class for the `services` table.
@@ -10,7 +11,7 @@ import javax.persistence.*;
  * The id field is the primary key and is auto-generated.
  * The name and status fields are required.
  * The description field is optional.
- * 
+ *
  * Author: binaryYuki
  */
 @Entity
@@ -32,7 +33,7 @@ public class Service {
 
   /**
    * Get the id of the service.
-   * 
+   *
    * @return the id of the service
    */
   public Long getId() {
@@ -41,7 +42,7 @@ public class Service {
 
   /**
    * Set the id of the service.
-   * 
+   *
    * @param id the id of the service
    */
   public void setId(Long id) {
@@ -50,7 +51,7 @@ public class Service {
 
   /**
    * Get the name of the service.
-   * 
+   *
    * @return the name of the service
    */
   public String getName() {
@@ -59,7 +60,7 @@ public class Service {
 
   /**
    * Set the name of the service.
-   * 
+   *
    * @param name the name of the service
    */
   public void setName(String name) {
@@ -68,7 +69,7 @@ public class Service {
 
   /**
    * Get the description of the service.
-   * 
+   *
    * @return the description of the service
    */
   public String getDescription() {
@@ -77,7 +78,7 @@ public class Service {
 
   /**
    * Set the description of the service.
-   * 
+   *
    * @param description the description of the service
    */
   public void setDescription(String description) {
@@ -86,7 +87,7 @@ public class Service {
 
   /**
    * Get the status of the service.
-   * 
+   *
    * @return the status of the service
    */
   public String getStatus() {
@@ -95,7 +96,7 @@ public class Service {
 
   /**
    * Set the status of the service.
-   * 
+   *
    * @param status the status of the service
    */
   public void setStatus(String status) {

@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <persistence xmlns="http://xmlns.jcp.org/xml/ns/persistence" version="2.2">
   <persistence-unit name="ZephyrPU">
-    <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
+    <provider>org.hibernate.reactive.provider.ReactivePersistenceProvider</provider>
+    <class>org.hibernate.reactive.example.session.Author</class>
+    <class>org.hibernate.reactive.example.session.Book</class>
     <class>Zephyr.entities.Service</class>
     <properties>
       <property name="javax.persistence.jdbc.driver" value="com.mysql.cj.jdbc.Driver"/>

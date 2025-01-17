@@ -39,11 +39,13 @@ dependencies {
   implementation("io.vertx:vertx-web-api-contract")
   implementation("io.vertx:vertx-tcp-eventbus-bridge")
   implementation("io.vertx:vertx-mysql-client:4.5.11")
-  implementation("org.flywaydb:flyway-core:11.4.2")
+  implementation("org.flywaydb:flyway-core:11.1.1")
   implementation("io.github.cdimascio:dotenv-java:3.1.0")
   implementation("io.netty:netty-all:4.1.117.Final")
   implementation("org.hibernate:hibernate-core:6.2.7.Final")
-  implementation("com.zaxxer:HikariCP:5.0.2")
+  implementation("com.zaxxer:HikariCP:5.0.1")
+  // jdbc java.lang.RuntimeException: Failed to get driver instance for jdbcUrl=jdbc:mysql://mysql-12487fa7-anime-akkk.h.aivencloud.com:21121/defaultdb
+  implementation("mysql:mysql-connector-java:8.0.27")
   testImplementation("io.vertx:vertx-junit5")
   testImplementation("org.junit.jupiter:junit-jupiter:$junitJupiterVersion")
 }
