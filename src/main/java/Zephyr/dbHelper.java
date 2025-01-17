@@ -28,6 +28,7 @@ public class dbHelper {
    * Constructor for dbHelper.
    * Initializes HikariCP, Hibernate, and Flyway.
    *
+   * @author binaryYuki
    * @param vertx Vertx instance
    */
   public dbHelper(Vertx vertx) {

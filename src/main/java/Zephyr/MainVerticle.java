@@ -9,6 +9,7 @@ import java.sql.SQLException;
 
 /**
  * Main Verticle for the application
+ * @author binaryYuki
  */
 public class MainVerticle extends AbstractVerticle {
 
@@ -175,5 +176,9 @@ public class MainVerticle extends AbstractVerticle {
           .end(error.encode());
       }
     });
+  }
+
+  public DatabaseQueue getDatabaseQueue() {
+    return databaseQueue;
   }
 }
