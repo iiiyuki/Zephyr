@@ -16,6 +16,14 @@ repositories {
 
 val vertxVersion = "4.5.11"
 val junitJupiterVersion = "5.11.4"
+val flywayVersion = "8.2.1"
+val dotenvVersion = "3.1.0"
+val nettyVersion = "4.1.117.Final"
+val hibernateCoreVersion = "6.6.4.Final"
+val caffeineVersion = "3.1.8"
+val hibernateEntityManagerVersion = "5.6.15.Final"
+val hikariCPVersion = "5.0.1"
+val mysqlConnectorVersion = "8.0.33"
 
 val mainVerticleName = "Zephyr.MainVerticle"
 val launcherClassName = "io.vertx.core.Launcher"
@@ -38,16 +46,16 @@ dependencies {
   implementation("io.vertx:vertx-web-openapi-router")
   implementation("io.vertx:vertx-web-api-contract")
   implementation("io.vertx:vertx-tcp-eventbus-bridge")
-  implementation("io.vertx:vertx-mysql-client:4.5.11")
+  implementation("io.vertx:vertx-mysql-client:$vertxVersion")
   implementation("io.vertx:vertx-web-client:$vertxVersion")
-  implementation("org.flywaydb:flyway-mysql:8.2.1")
-  implementation("io.github.cdimascio:dotenv-java:3.1.0")
-  implementation("io.netty:netty-all:4.1.117.Final")
+  implementation("org.flywaydb:flyway-mysql:$flywayVersion")
+  implementation("io.github.cdimascio:dotenv-java:$dotenvVersion")
+  implementation("io.netty:netty-all:$nettyVersion")
   implementation("org.hibernate:hibernate-core:6.6.4.Final")
-  implementation("com.github.ben-manes.caffeine:caffeine:3.1.8")
-  implementation("org.hibernate:hibernate-entitymanager:5.6.15.Final")
-  implementation("com.zaxxer:HikariCP:5.0.1")
-  implementation("mysql:mysql-connector-java:8.0.33")
+  implementation("com.github.ben-manes.caffeine:caffeine:$caffeineVersion")
+  implementation("org.hibernate:hibernate-entitymanager:$hibernateEntityManagerVersion")
+  implementation("com.zaxxer:HikariCP:$hikariCPVersion")
+  implementation("mysql:mysql-connector-java:$mysqlConnectorVersion")
   testImplementation("io.vertx:vertx-junit5")
   testImplementation("org.junit.jupiter:junit-jupiter:$junitJupiterVersion")
 }
