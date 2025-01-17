@@ -47,7 +47,7 @@ dependencies {
   implementation("com.github.ben-manes.caffeine:caffeine:3.1.8")
   implementation("org.hibernate:hibernate-entitymanager:5.6.15.Final")
   implementation("com.zaxxer:HikariCP:5.0.1")
-  implementation("mysql:mysql-connector-java:8.0.27")
+  implementation("mysql:mysql-connector-java:8.0.33")
   testImplementation("io.vertx:vertx-junit5")
   testImplementation("org.junit.jupiter:junit-jupiter:$junitJupiterVersion")
 }
