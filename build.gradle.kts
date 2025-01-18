@@ -16,13 +16,13 @@ repositories {
 
 val vertxVersion = "4.5.11"
 val junitJupiterVersion = "5.11.4"
-val flywayVersion = "8.2.1"
+val flywayVersion = "11.2.0"
 val dotenvVersion = "3.1.0"
 val nettyVersion = "4.1.117.Final"
 val hibernateCoreVersion = "6.6.4.Final"
 val caffeineVersion = "3.2.0"
 val hibernateEntityManagerVersion = "5.6.15.Final"
-val hikariCPVersion = "5.1.0"
+val hikariCPVersion = "6.2.1"
 val mysqlConnectorVersion = "8.0.33"
 
 val mainVerticleName = "Zephyr.MainVerticle"
