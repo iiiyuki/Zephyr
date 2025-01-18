@@ -28,9 +28,7 @@ public class weather {
       .compose(response -> {
         System.out.println("Response: " + response);
         return Future.succeededFuture();
-      }).onFailure(err -> {
-        System.err.println("Error: " + err.getMessage());
-      });
+      }).onFailure(err -> System.err.println("Error: " + err.getMessage()));
 
     // 保证 JVM 不提前退出
     task.onComplete(res -> vertx.close());
@@ -45,8 +43,13 @@ public class weather {
         if (ar.succeeded()) {
           HttpResponse<io.vertx.core.buffer.Buffer> response = ar.result();
           if (response.statusCode() == 200) {
+            JsonObject jsonResponse = response.bodyAsJsonObject();
+            if (jsonResponse.getInteger("code")==200) {
+              promise.complete(jsonResponse);
+            } else {
+              promise.fail("HTTP Error: " + jsonResponse.getString("message"));
+            }
             // 返回 JSON 响应
-            promise.complete(response.bodyAsJsonObject());
           } else {
             promise.fail("HTTP Error: " + response.statusCode());
           }

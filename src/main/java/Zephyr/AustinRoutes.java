@@ -76,7 +76,7 @@ public class AustinRoutes {
         return Future.succeededFuture();
       }).onFailure(err -> {
         System.err.println("Error: " + err.getMessage());
-        ctx.fail(500);
+        ctx.fail(400);
       });
 
   }
