@@ -73,4 +73,5 @@ public class YukiRoutes {
       throw new RuntimeException(ex);
     }
   }
+
 }
