@@ -20,7 +20,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Import GPG key
-        uses: crazy-max/ghaction-import-gpg@v4 # or whatever is latest
+        uses: crazy-max/ghaction-import-gpg@v6 # or whatever is latest
         with:
             gpg_private_key: ${{ secrets.GPG_KEY }}
             passphrase: ${{ secrets.PASSPHRASE }}
