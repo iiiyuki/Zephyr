@@ -2,6 +2,7 @@ package Zephyr;
 
 import io.github.cdimascio.dotenv.Dotenv;
 import io.vertx.core.AsyncResult;
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import com.zaxxer.hikari.HikariConfig;
@@ -22,7 +23,7 @@ import java.util.Map;
  */
 public class dbHelper {
   private final HikariDataSource dataSource;
-  private final EntityManagerFactory entityManagerFactory;
+  private static EntityManagerFactory entityManagerFactory = getEntityManagerFactory();
 
   /**
    * Constructor for dbHelper.
@@ -50,12 +51,16 @@ public class dbHelper {
     properties.put("jakarta.persistence.jdbc.user", dotenv.get("DB_USER"));
     properties.put("jakarta.persistence.jdbc.password", dotenv.get("DB_PASSWORD"));
     // Create the EntityManagerFactory for JPA (Hibernate)
-    this.entityManagerFactory = Persistence.createEntityManagerFactory("ZephyrPU", properties);
+    entityManagerFactory = Persistence.createEntityManagerFactory("ZephyrPU", properties);
 
     // Initialize Flyway for database migration
     Flyway flyway = Flyway.configure().dataSource(dataSource).load();
     flyway.baseline();
     flyway.migrate();
+  }
+
+  public static EntityManagerFactory getEntityManagerFactory() {
+    return entityManagerFactory;
   }
 
   /**
@@ -69,15 +74,6 @@ public class dbHelper {
   }
 
   /**
-   * Get an EntityManager from the EntityManagerFactory.
-   *
-   * @return EntityManager object
-   */
-  public EntityManager getEntityManager() {
-    return entityManagerFactory.createEntityManager();
-  }
-
-  /**
    * Asynchronous database initialization.
    * Flyway migration is already handled in the constructor.
    *
@@ -85,6 +81,6 @@ public class dbHelper {
    */
   public void init(Handler<AsyncResult<Void>> resultHandler) {
     // Flyway migration is already handled in the constructor
-    resultHandler.handle(io.vertx.core.Future.succeededFuture());
+    resultHandler.handle(Future.succeededFuture());
   }
 }
