@@ -2,13 +2,15 @@ package Zephyr.entities;
 
 import jakarta.persistence.*;
 
+  /**
+   * @author Jingyu Wang
+   */
   @Entity
   @Table(name = "uploads")
   public class Uploads {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private String file_path;
+    private String filePath;
 
 
     @Column(name = "processed", nullable = false)
@@ -20,8 +22,8 @@ import jakarta.persistence.*;
      *
      * @return the path of the file as String
      */
-    public String getFile_path() {
-      return file_path;
+    public String getFilePath() {
+      return filePath;
     }
 
     /**
@@ -43,7 +45,7 @@ import jakarta.persistence.*;
     }
 
 
-    public void setFile_path(String file_path) {
-      this.file_path = file_path;
+    public void setFilePath(String filePath) {
+      this.filePath = filePath;
     }
   }
