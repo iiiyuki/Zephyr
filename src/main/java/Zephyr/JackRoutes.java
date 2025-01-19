@@ -203,7 +203,7 @@ public class JackRoutes {
       Service existingService = entityManager.find(Service.class, id);
       if (existingService != null) {
         // 更新现有服务
-        existingService.setName("Updated Service Name");
+        existingService.setName("Updated Service Name@" + System.currentTimeMillis());
         existingService.setDescription("Updated Description");
         existingService.setStatus("inactive");
       } else {
