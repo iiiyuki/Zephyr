@@ -1,7 +1,7 @@
 package Zephyr.entities;
 
 import jakarta.persistence.*;
-
+import java.util.Objects;
 
 /**
  * Entity class for the `services` table.
@@ -19,87 +19,90 @@ import jakarta.persistence.*;
 public class Service {
 
   @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @GeneratedValue(strategy = GenerationType.IDENTITY) // 主键自动生成
   private Long id;
 
-  @Column(name = "name", nullable = false)
+  @Column(name = "name", nullable = false) // 非空
   private String name;
 
-  @Column(name = "description")
+  @Column(name = "description") // 可空
   private String description;
 
-  @Column(name = "status", nullable = false)
+  @Column(name = "status", nullable = false) // 非空
   private String status;
 
-  /**
-   * Get the id of the service.
-   *
-   * @return the id of the service
-   */
+  @Version // 乐观锁版本字段
+  private int version;
+
+  // Getters and Setters
+
   public Long getId() {
     return id;
   }
 
-  /**
-   * Set the id of the service.
-   *
-   * @param id the id of the service
-   */
   public void setId(Long id) {
     this.id = id;
   }
 
-  /**
-   * Get the name of the service.
-   *
-   * @return the name of the service
-   */
   public String getName() {
     return name;
   }
 
-  /**
-   * Set the name of the service.
-   *
-   * @param name the name of the service
-   */
   public void setName(String name) {
     this.name = name;
   }
 
-  /**
-   * Get the description of the service.
-   *
-   * @return the description of the service
-   */
   public String getDescription() {
     return description;
   }
 
-  /**
-   * Set the description of the service.
-   *
-   * @param description the description of the service
-   */
   public void setDescription(String description) {
     this.description = description;
   }
 
-  /**
-   * Get the status of the service.
-   *
-   * @return the status of the service
-   */
   public String getStatus() {
     return status;
   }
 
-  /**
-   * Set the status of the service.
-   *
-   * @param status the status of the service
-   */
   public void setStatus(String status) {
     this.status = status;
+  }
+
+  public int getVersion() {
+    return version;
+  }
+
+  public void setVersion(int version) {
+    this.version = version;
+  }
+
+  // Override equals and hashCode for proper comparison
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    Service service = (Service) o;
+    return Objects.equals(id, service.id);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(id);
+  }
+
+  @Override
+  public String toString() {
+    return "Service{" +
+      "id=" + id +
+      ", name='" + name + '\'' +
+      ", description='" + description + '\'' +
+      ", status='" + status + '\'' +
+      ", version=" + version +
+      '}';
   }
 }
