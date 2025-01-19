@@ -45,7 +45,8 @@ public class JackRoutes {
 
     router.route().handler(BodyHandler.create()
       .setBodyLimit(50000)
-      .setDeleteUploadedFilesOnEnd(true)//处理后自动移除
+      //处理后自动移除
+      .setDeleteUploadedFilesOnEnd(true)
       .setHandleFileUploads(true)
       .setUploadsDirectory(Paths.get("Zephyr", "uploads").toString())
       .setMergeFormAttributes(true));
@@ -59,10 +60,9 @@ public class JackRoutes {
         if ("multipart/form-data".equals(u.contentType())
           &&".txt".equals(tail)
           &&"UTF-8".equals(u.charSet())
-          &&u.size()<=50000)
+          &&u.size()<=50000) {
           handleFileUpload(ctx, u);//校验通过，开始处置
-
-        else{
+        } else{
           uploads.remove(u);//校验不通过，强制删除
         }
       }
@@ -106,15 +106,18 @@ public class JackRoutes {
 
       // 查找现有的文件
       Uploads existingFileUpload = entityManager.find(Uploads.class, path.toString());
-      if (existingFileUpload != null && existingFileUpload.getProcessed()) {//只有已处理文件才能被覆盖
+      //只有已处理文件才能被覆盖
+      if (existingFileUpload != null && existingFileUpload.getProcessed()) {
         // 更新现有文件
-        existingFileUpload.setFile_path(path.toString());
-        existingFileUpload.setProcessed(false);//刚上传或更新的文件还未被processFile方法处理
+        existingFileUpload.setFilePath(path.toString());
+        //刚上传或更新的文件还未被processFile方法处理
+        existingFileUpload.setProcessed(false);
       } else {
         // 如果文件不存在，则存入新文件
         Uploads newUpload = new Uploads();
-        newUpload.setFile_path(path.toString());
+        newUpload.setFilePath(path.toString());
         newUpload.setProcessed(false);
+        entityManager.persist(newUpload);
       }
 
       // Commit the transaction
@@ -132,14 +135,18 @@ public class JackRoutes {
     }
     entityManager = dbHelper.getEntityManagerFactory().createEntityManager();
     List<Uploads> uploads = entityManager.createQuery
-      ("SELECT u FROM Uploads u", Uploads.class).getResultList();//提取所有文件
+      //提取所有文件
+      ("SELECT u FROM Uploads u", Uploads.class).getResultList();
     for(Uploads upload:uploads){
-      if (upload.getFile_path().equals(path.toString())) {//非指定路径文件不会被处理
-        if (processFile(upload.getFile_path())) {//发现可疑关键词
+      //非指定路径文件不会被处理
+      if (upload.getFilePath().equals(path.toString())) {
+        //发现可疑关键词
+        if (processFile(upload.getFilePath())) {
           JsonObject response = new JsonObject()
             .put("status", "uploaded")
             .put("dir", path.toString())
-            .put("result", "alarmed")//返回alarmed
+            //返回alarmed状态
+            .put("result", "alarmed")
             .put("timestamp", System.currentTimeMillis());
 
           ctx.response()
@@ -149,7 +156,8 @@ public class JackRoutes {
           JsonObject response = new JsonObject()
             .put("status", "uploaded")
             .put("dir", path.toString())
-            .put("result", "unalarmed")//检测通过
+            //检测通过
+            .put("result", "unalarmed")
             .put("timestamp", System.currentTimeMillis());
 
           ctx.response()
@@ -163,7 +171,7 @@ public class JackRoutes {
   }
 
   private boolean processFile(String path) {
-    /**施工中*/
+    /*施工中*/
     EntityManager entityManager = dbHelper.getEntityManagerFactory().createEntityManager();
     //提取所有已知的可疑关键词
     List<AcceptedSequences> acceptedSequences =
@@ -177,11 +185,13 @@ public class JackRoutes {
       while((line = br.readLine())!=null){
         for (AcceptedSequences sequence: acceptedSequences){
           if (line.contains(sequence.getAcceptedSequence())){
-            return true;//全文任何部分发现关键词，视为检测到关键词
+            //全文任何部分发现关键词，视为检测到关键词
+            return true;
           }
         }
       }
-      return false;//文件结尾仍未发现关键词，视为未检测到关键词
+      //文件结尾仍未发现关键词，视为未检测到关键词
+      return false;
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
