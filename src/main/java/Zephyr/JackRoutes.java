@@ -1,6 +1,8 @@
 package Zephyr;
 
+import Zephyr.entities.AcceptedSequences;
 import Zephyr.entities.Service;
+import Zephyr.entities.Uploads;
 import io.vertx.ext.web.FileUpload;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
@@ -8,12 +10,16 @@ import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.handler.BodyHandler;
 import jakarta.persistence.EntityManager;
-
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 
 /**
  * @author Jingyu Wang
+ * 待更新：关键词标记器
  */
 public class JackRoutes {
 
@@ -39,29 +45,32 @@ public class JackRoutes {
 
     router.route().handler(BodyHandler.create()
       .setBodyLimit(50000)
-      .setDeleteUploadedFilesOnEnd(true)
+      .setDeleteUploadedFilesOnEnd(true)//处理后自动移除
       .setHandleFileUploads(true)
-      .setUploadsDirectory("C:/Users/a1523/Desktop/Zephyr/uploads")
+      .setUploadsDirectory(Paths.get("Zephyr", "uploads").toString())
       .setMergeFormAttributes(true));
     //C:/Users/a1523/Desktop/Zephyr/uploads
 
     router.post("/analyze/text/uploads").handler(ctx -> {
       List<FileUpload> uploads = ctx.fileUploads();
       for(FileUpload u:uploads){
+        String fileName = u.fileName();
+        String tail = fileName.substring(fileName.lastIndexOf("."));
         if ("multipart/form-data".equals(u.contentType())
-          &&u.fileName().endsWith(".txt")
+          &&".txt".equals(tail)
           &&"UTF-8".equals(u.charSet())
-          &&u.size()<=50000){
-          handleFileUpload(ctx, u);
-        }
+          &&u.size()<=50000)
+          handleFileUpload(ctx, u);//校验通过，开始处置
+
         else{
-          uploads.remove(u);
+          uploads.remove(u);//校验不通过，强制删除
         }
       }
     });
 
     return router;
   }
+
 
   // 处理 "/api/jack" 路径的逻辑
   private void handleRoot(RoutingContext ctx) {
@@ -87,38 +96,95 @@ public class JackRoutes {
       .end(response.encode());
   }
 
+  //关键词检测器 A naive approach of a text-based fraud detector.
   private void handleFileUpload(RoutingContext ctx, FileUpload u){
-    JsonObject response = new JsonObject()
-    .put("status","uploaded")
-    .put("dir", "C:\\Users\\a1523\\Desktop\\Zephyr\\uploads" + "\\" + u.fileName())
-    .put("timestamp", System.currentTimeMillis());
+    Path path = Paths.get("Zephyr", "uploads", u.uploadedFileName());
+    EntityManager entityManager = dbHelper.getEntityManagerFactory().createEntityManager();
+    try {
+      // Begin a transaction
+      entityManager.getTransaction().begin();
 
-    ctx.response()
-    .putHeader("Content-Type", "application/json")
-    .end(response.encode());
-  }
+      // 查找现有的文件
+      Uploads existingFileUpload = entityManager.find(Uploads.class, path.toString());
+      if (existingFileUpload != null && existingFileUpload.getProcessed()) {//只有已处理文件才能被覆盖
+        // 更新现有文件
+        existingFileUpload.setFile_path(path.toString());
+        existingFileUpload.setProcessed(false);//刚上传或更新的文件还未被processFile方法处理
+      } else {
+        // 如果文件不存在，则存入新文件
+        Uploads newUpload = new Uploads();
+        newUpload.setFile_path(path.toString());
+        newUpload.setProcessed(false);
+      }
 
-  private boolean processFile(Path path) {
-    return true;
-    /** 施工中：1.Path对象的用法？ 2.数据库如何在本路径建表？
-    * List<CharSequence> acceptedSequences = ;
-    * String pathName = path.toString();
-    * String line;
-    * boolean res;
-    * try{
-      FileReader reader = new FileReader(pathName);
-      BufferedReader br = new BufferedReader(reader);
-      while((line = br.readLine())!=null){
-        for (CharSequence sequence: acceptedSequences){
+      // Commit the transaction
+      entityManager.getTransaction().commit();
+    } catch (Exception e) {
+      // Rollback the transaction in case of errors
+      if (entityManager.getTransaction().isActive()) {
+        entityManager.getTransaction().rollback();
+      }
+      ctx.response().setStatusCode(500).end("Error: " + e.getMessage());
+      return;
+    } finally {
+      // Close the entity manager
+      entityManager.close();
+    }
+    entityManager = dbHelper.getEntityManagerFactory().createEntityManager();
+    List<Uploads> uploads = entityManager.createQuery
+      ("SELECT u FROM Uploads u", Uploads.class).getResultList();//提取所有文件
+    for(Uploads upload:uploads){
+      if (upload.getFile_path().equals(path.toString())) {//非指定路径文件不会被处理
+        if (processFile(upload.getFile_path())) {//发现可疑关键词
+          JsonObject response = new JsonObject()
+            .put("status", "uploaded")
+            .put("dir", path.toString())
+            .put("result", "alarmed")//返回alarmed
+            .put("timestamp", System.currentTimeMillis());
 
+          ctx.response()
+            .putHeader("Content-Type", "application/json")
+            .end(response.encode());
+        } else {
+          JsonObject response = new JsonObject()
+            .put("status", "uploaded")
+            .put("dir", path.toString())
+            .put("result", "unalarmed")//检测通过
+            .put("timestamp", System.currentTimeMillis());
+
+          ctx.response()
+            .putHeader("Content-Type", "application/json")
+            .end(response.encode());
         }
       }
-    } catch (FileNotFoundException e) {
-      throw new RuntimeException(e);
+      upload.setProcessed(true);
+      //处理结束, 文件在DB改为可覆盖状态，被BodyHandler从文件夹移除(Line:48)
+    }
+  }
+
+  private boolean processFile(String path) {
+    /**施工中*/
+    EntityManager entityManager = dbHelper.getEntityManagerFactory().createEntityManager();
+    //提取所有已知的可疑关键词
+    List<AcceptedSequences> acceptedSequences =
+      entityManager
+        .createQuery("SELECT a From AcceptedSequences a", AcceptedSequences.class)
+        .getResultList();
+    String line;
+    try{
+      FileReader reader = new FileReader(path);
+      BufferedReader br = new BufferedReader(reader);
+      while((line = br.readLine())!=null){
+        for (AcceptedSequences sequence: acceptedSequences){
+          if (line.contains(sequence.getAcceptedSequence())){
+            return true;//全文任何部分发现关键词，视为检测到关键词
+          }
+        }
+      }
+      return false;//文件结尾仍未发现关键词，视为未检测到关键词
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
-     */
   }
 
   // orm test
