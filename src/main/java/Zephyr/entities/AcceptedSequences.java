@@ -1,6 +1,5 @@
 package Zephyr.entities;
 
-import java.lang.CharSequence;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -17,29 +16,38 @@ public class AcceptedSequences {
    * updated_at：更新时间
    * 实现一个方法： 导出为 list
    */
+
   @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @GeneratedValue(strategy = GenerationType.IDENTITY) // 主键自动生成
   private Long id;
 
-  @Column(name = "sequence", nullable = false)
-  private String sequence;
+  @Column(name = "content", nullable = false)
+  private String content;
 
   @Column(name = "created_at", nullable = false)
-  private String created_at;
+  private String timeStampString;
 
-  @Column(name = "updated_at", nullable = false)
-  private String updated_at;
-
-  public Long getId() {
-    return id;
-  }
-
-  // export to list
-  public List<String> exportToList() {
+  public List<String> getList(){
     List<String> list = new ArrayList<>();
-    list.add(sequence);
-    list.add(created_at);
-    list.add(updated_at);
+    list.add(content);
+    list.add(timeStampString);
     return list;
   }
+
+    public void setContent(String content) {
+        this.content = content;
+    }
+
+
+    public void setTimeStampString(String timeStampString) {
+        this.timeStampString = timeStampString;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id){
+      this.id = id;
+    }
 }
