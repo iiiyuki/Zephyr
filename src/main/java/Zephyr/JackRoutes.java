@@ -60,10 +60,14 @@ public class JackRoutes {
         if ("multipart/form-data".equals(u.contentType())
           &&".txt".equals(tail)
           &&"UTF-8".equals(u.charSet())
-          &&u.size()<=50000) {
-          handleFileUpload(ctx, u);//校验通过，开始处置
-        } else{
-          uploads.remove(u);//校验不通过，强制删除
+          &&u.size()<=50000)
+          //校验通过，开始处置
+          handleFileUpload(ctx, u);
+
+
+        else{
+          //校验不通过，强制删除
+          uploads.remove(u);
         }
       }
     });
@@ -134,12 +138,12 @@ public class JackRoutes {
       entityManager.close();
     }
     entityManager = dbHelper.getEntityManagerFactory().createEntityManager();
+    //提取指定文件
     List<Uploads> uploads = entityManager.createQuery
-      //提取所有文件
-      ("SELECT u FROM Uploads u", Uploads.class).getResultList();
+        ("SELECT filePath FROM Uploads WHERE processed = FALSE", Uploads.class).getResultList();
     for(Uploads upload:uploads){
-      //非指定路径文件不会被处理
-      if (upload.getFilePath().equals(path.toString())) {
+      //如果列表中有指定路径元素，说明提取正确
+      if(upload.getFilePath().equals(path.toString())) {
         //发现可疑关键词
         if (processFile(upload.getFilePath())) {
           JsonObject response = new JsonObject()
@@ -164,10 +168,12 @@ public class JackRoutes {
             .putHeader("Content-Type", "application/json")
             .end(response.encode());
         }
+        upload.setProcessed(true);
+        //处理结束, 文件在DB改为可覆盖状态，被BodyHandler从文件夹移除(Line:48)
       }
-      upload.setProcessed(true);
-      //处理结束, 文件在DB改为可覆盖状态，被BodyHandler从文件夹移除(Line:48)
     }
+    //遍历列表后仍未发现指定文件，处理失败
+    ctx.fail(404);
   }
 
   private boolean processFile(String path) {
@@ -176,7 +182,7 @@ public class JackRoutes {
     //提取所有已知的可疑关键词
     List<AcceptedSequences> acceptedSequences =
       entityManager
-        .createQuery("SELECT a From AcceptedSequences a", AcceptedSequences.class)
+        .createQuery("SELECT * From AcceptedSequences", AcceptedSequences.class)
         .getResultList();
     String line;
     try{

@@ -6,7 +6,6 @@ import jakarta.persistence.*;
 @Table(name = "accepted_sequences")
 public class AcceptedSequences {
   @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
   private CharSequence acceptedSequence;
 
 
