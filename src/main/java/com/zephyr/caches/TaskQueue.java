@@ -1,74 +1,66 @@
 package com.zephyr.caches;
 
-import java.util.concurrent.ConcurrentHashMap;
+import Zephyr.caches.Tasks;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.ArrayList;
 import java.util.List;
 
 public class TaskQueue {
-    private final ConcurrentHashMap<String, Object> kvStore;
-    private final ConcurrentLinkedQueue<Task> timeQueue;
-    private final ReentrantLock lock;
+    private final Cache<String, Object> cache;
+    private final ConcurrentLinkedQueue<Tasks> timeQueue;
 
     public TaskQueue() {
-        this.kvStore = new ConcurrentHashMap<>();
-        this.timeQueue = new ConcurrentLinkedQueue<>();
-        this.lock = new ReentrantLock();
+        this.cache = Caffeine.newBuilder()
+                .expireAfterWrite(1, TimeUnit.HOURS)  // 默认1小时过期
+                .maximumSize(10000)                   // 最大缓存条目数
+                .build();
+        this.timeQueue = new ConcurrentLinkedQueue<Tasks>();
     }
 
     public void put(String key, Object value) {
-        lock.lock();
-        try {
-            kvStore.put(key, value);
-            timeQueue.offer(new Task(key, value));
-        } finally {
-            lock.unlock();
-        }
+        cache.put(key, value);
+        timeQueue.offer(new Tasks(key, value));
     }
 
     public Object get(String key) {
-        return kvStore.get(key);
+        return cache.getIfPresent(key);
     }
 
-    public List<Task> getTasksByPattern(String regex) {
-        List<Task> matchedTasks = new ArrayList<>();
+    public List<Tasks> getTasksByPattern(String regex) {
+        List<Tasks> matchedTasks = new ArrayList<>();
         Pattern pattern = Pattern.compile(regex);
-        
-        lock.lock();
-        try {
-            for (Task task : timeQueue) {
-                if (pattern.matcher(task.getKey()).matches()) {
-                    matchedTasks.add(task);
-                }
+
+        for (Tasks task : timeQueue) {
+            if (pattern.matcher(task.getKey()).matches()) {
+                matchedTasks.add(task);
             }
-        } finally {
-            lock.unlock();
         }
         return matchedTasks;
     }
 
-    public Task pollTask() {
-        return timeQueue.poll();
+    public Tasks pollTask() {
+        Tasks task = timeQueue.poll();
+        if (task != null) {
+            cache.invalidate(task.getKey());
+        }
+        return task;
     }
 
-    public Task pollTask(String regex) {
-        lock.lock();
-        try {
-            Pattern pattern = Pattern.compile(regex);
-            Task task = timeQueue.peek();
-            while (task != null) {
-                if (pattern.matcher(task.getKey()).matches()) {
-                    timeQueue.remove(task);
+    public Tasks pollTask(String regex) {
+        Pattern pattern = Pattern.compile(regex);
+        for (Tasks task : timeQueue) {
+            if (pattern.matcher(task.getKey()).matches()) {
+                if (timeQueue.remove(task)) {
+                    cache.invalidate(task.getKey());
                     return task;
                 }
-                task = timeQueue.peek();
             }
-            return null;
-        } finally {
-            lock.unlock();
         }
+        return null;
     }
 
     public int size() {
