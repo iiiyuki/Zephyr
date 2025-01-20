@@ -50,7 +50,7 @@ public class TestJackRoutes {
   void testUpload(Vertx vertx, VertxTestContext testContext) {
     // 创建 HTTP 客户端并发送 POST 请求到 "/api/jack/analyze/text/uploads"
     vertx.createHttpClient()
-            .request(io.vertx.core.http.HttpMethod.POST, 8888, "127.0.0.1", "/api/jack//analyze/text/uploads")
+            .request(io.vertx.core.http.HttpMethod.POST, 8888, "127.0.0.1", "/api/jack/analyze/text/uploads")
             .compose(HttpClientRequest::send) // 发送请求
             .onSuccess(resp -> handleResponse(resp, testContext)) // 处理成功响应
             .onFailure(testContext::failNow); // 处理请求失败
@@ -72,7 +72,7 @@ public class TestJackRoutes {
     testContext.verify(() -> {
       // 将响应体解析为 JSON 对象
       JsonObject responseJson = body.toJsonObject();
-      
+
       // should be {"status":"ok","message":"This is Jack's info endpoint!","timestamp":1736972790315}
       // 验证响应内容
       assertEquals("ok", responseJson.getString("status"), "Status should be 'ok'");
