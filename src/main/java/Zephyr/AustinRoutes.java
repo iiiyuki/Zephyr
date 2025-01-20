@@ -1,5 +1,6 @@
 package Zephyr;
 
+import Zephyr.entities.Todo;
 import io.vertx.core.Future;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
@@ -7,6 +8,11 @@ import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.WebClient;
 import io.vertx.ext.web.client.WebClientOptions;
+import jakarta.persistence.EntityManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.List;
 
 import static Zephyr.requests.weather.sendHttpRequest;
 
@@ -16,6 +22,7 @@ import static Zephyr.requests.weather.sendHttpRequest;
  */
 public class AustinRoutes {
 
+  private static final Logger log = LoggerFactory.getLogger(AustinRoutes.class);
   private final Vertx vertx;
 
   // 构造函数，接收 Vert.x 实例
@@ -35,6 +42,11 @@ public class AustinRoutes {
 
     // 定义 "/api/austin/poem" 路径
     router.route("/poem").handler(this::handlePoem);
+
+    // 定义 "/api/austin/todo" 路径
+    router.post("/todoList").handler(this::handleTodo);
+//    router.route().handler(BodyHandler.create());
+
 
     return router;
   }
@@ -105,6 +117,70 @@ public class AustinRoutes {
         System.err.println("Error: " + err.getMessage());
         ctx.fail(400);
       });
+  }
+
+  //处理 "/api/austin/todoList" 路径的逻辑
+  private void handleTodo(RoutingContext ctx) {
+    ctx.request().bodyHandler(buffer -> {
+      JsonObject body = buffer.toJsonObject();
+      log.info("Received body: " + body.encode());
+      //todo 为什么这里输出为空
+      String title = body.getString("title");
+      log.info("Received title: " + title);
+      //todo 为什么这里输出为空
+      ctx.response()
+        .setStatusCode(200)
+        .putHeader("Content-Type", "application/json");
+      // 假设要查找或更新 ID 为 1 的实体
+      Long id = 1L;
+
+      // Get the entity manager
+      EntityManager entityManager = dbHelper.getEntityManagerFactory().createEntityManager();
+
+      try {
+        // Begin a transaction
+        entityManager.getTransaction().begin();
+
+        // 查找现有的服务
+        Todo exisitingTodo = entityManager.find(Todo.class, id);
+        if (exisitingTodo != null) {
+          // 更新现有服务
+          exisitingTodo.setTitle(title);
+        } else {
+          // 如果服务不存在，则创建一个新服务
+          Todo newService = new Todo();
+          newService.setTitle(title);
+
+          // Persist the new service
+          entityManager.persist(newService);
+        }
+
+        // Commit the transaction
+        entityManager.getTransaction().commit();
+      } catch (Exception e) {
+        // Rollback the transaction in case of errors
+        if (entityManager.getTransaction().isActive()) {
+          entityManager.getTransaction().rollback();
+        }
+        ctx.response().setStatusCode(500).end("Error: " + e.getMessage());
+      } finally {
+        // Close the entity manager
+        entityManager.close();
+      }
+
+      // 新EntityManager
+      entityManager = dbHelper.getEntityManagerFactory().createEntityManager();
+
+      // 从数据库中查询所有服务
+      List<Todo> services = entityManager.createQuery("SELECT s FROM Todo s", Todo.class).getResultList();
+      JsonObject response = new JsonObject()
+        .put("status", "ok")
+        .put("title", title);
+      entityManager.close();
+      ctx.response()
+        .putHeader("Content-Type", "application/json")
+        .end(response.encode());
+  });
   }
 }
 
