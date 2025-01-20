@@ -78,10 +78,11 @@ public class JackRoutes {
           //校验不通过，强制删除
           uploads.remove(u);
           ctx.fail(400);
+
         }
       }
     });
-
+      
     /**
      * 添加一个关键词
      * 前端传入Json对象，提取其input字段，写入数据库
@@ -245,6 +246,7 @@ public class JackRoutes {
         .createQuery("SELECT a FROM AcceptedSequences a", AcceptedSequences.class)
         .getResultList();
     String line;
+
     try{
       FileReader reader = new FileReader(path);
       BufferedReader br = new BufferedReader(reader);
