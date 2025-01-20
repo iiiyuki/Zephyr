@@ -4,6 +4,7 @@ import Zephyr.entities.AcceptedSequences;
 import Zephyr.entities.Service;
 import Zephyr.entities.Uploads;
 import io.vertx.ext.web.FileUpload;
+import io.vertx.ext.web.RequestBody;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.core.Vertx;
@@ -78,6 +79,56 @@ public class JackRoutes {
           uploads.remove(u);
           ctx.fail(400);
         }
+      }
+    });
+
+    /**
+     * 添加一个关键词
+     * 前端传入Json对象，提取其input字段，写入数据库
+     */
+    router.post("submit/keyword").handler( ctx-> {
+      //获取请求体
+      RequestBody body = ctx.body();
+      //转化为JSON对象
+      JsonObject object = body.asJsonObject();
+      String keyword = object.getString("input");
+      EntityManager entityManager = dbHelper.getEntityManagerFactory().createEntityManager();
+      //提取所有已知的可疑关键词
+      List<AcceptedSequences> acceptedSequences =
+        entityManager
+          .createQuery("SELECT a FROM AcceptedSequences a", AcceptedSequences.class)
+          .getResultList();
+      //如关键词已存在，则避免覆盖它
+      for (AcceptedSequences acceptedSequences1: acceptedSequences){
+        if(acceptedSequences1.getList().getFirst().equals(keyword)){
+          ctx.fail(400);
+        }
+      }
+      entityManager.close();
+      //遍历完成仍不存在，存入新关键词
+      entityManager = dbHelper.getEntityManagerFactory().createEntityManager();
+      try {
+        // Begin a transaction
+        entityManager.getTransaction().begin();
+
+          // 创建一个新AcceptedSequences对象
+          AcceptedSequences newSequence = new AcceptedSequences();
+          newSequence.setContent(keyword);
+          newSequence.setTimeStampString(""+System.currentTimeMillis());
+          // Persist the new sequence
+          entityManager.persist(newSequence);
+
+        // Commit the transaction
+        entityManager.getTransaction().commit();
+      } catch (Exception e) {
+        // Rollback the transaction in case of errors
+        if (entityManager.getTransaction().isActive()) {
+          entityManager.getTransaction().rollback();
+        }
+        ctx.response().setStatusCode(500).end("Error: " + e.getMessage());
+      } finally {
+        // Close the entity manager
+        entityManager.close();
       }
     });
 
@@ -194,25 +245,23 @@ public class JackRoutes {
         .createQuery("SELECT a FROM AcceptedSequences a", AcceptedSequences.class)
         .getResultList();
     String line;
-//    try{
-//      FileReader reader = new FileReader(path);
-//      BufferedReader br = new BufferedReader(reader);
-//      while((line = br.readLine())!=null){
-//        for (AcceptedSequences sequence: acceptedSequences){
-//          if (line.contains(sequence.getAcceptedSequence())){
-//            //全文任何部分发现关键词，视为检测到关键词
-//            return true;
-//          }
-//        }
-//      }
-//      //文件结尾仍未发现关键词，视为未检测到关键词
-//      return false;
-//    } catch (IOException e) {
-//      throw new RuntimeException(e);
-//    }
-    return false;
+    try{
+      FileReader reader = new FileReader(path);
+      BufferedReader br = new BufferedReader(reader);
+      while((line = br.readLine())!=null){
+        for (AcceptedSequences sequence: acceptedSequences){
+          if (line.contains(sequence.getList().getFirst())){
+            //全文任何部分发现关键词，视为检测到关键词
+            return true;
+          }
+        }
+      }
+      //文件结尾仍未发现关键词，视为未检测到关键词
+      return false;
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
   }
-
   // orm test
   private void testOrm(RoutingContext ctx) {
     // 假设要查找或更新 ID 为 1 的实体
