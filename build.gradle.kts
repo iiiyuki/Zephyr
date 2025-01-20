@@ -24,6 +24,7 @@ val caffeineVersion = "3.2.0"
 val hibernateEntityManagerVersion = "5.6.15.Final"
 val hikariCPVersion = "6.2.1"
 val mysqlConnectorVersion = "8.0.33"
+val valkeyVersion = "5.3.0"
 
 val mainVerticleName = "Zephyr.MainVerticle"
 val launcherClassName = "io.vertx.core.Launcher"
@@ -57,6 +58,7 @@ dependencies {
   implementation("com.zaxxer:HikariCP:$hikariCPVersion")
   implementation("org.hibernate:hibernate-c3p0:$hibernateCoreVersion")
   implementation("mysql:mysql-connector-java:$mysqlConnectorVersion")
+  implementation("io.valkey:valkey-java:$valkeyVersion")
   testImplementation("io.vertx:vertx-junit5")
   testImplementation("org.junit.jupiter:junit-jupiter:$junitJupiterVersion")
 }
