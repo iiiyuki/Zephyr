@@ -33,6 +33,9 @@ public class AustinRoutes {
     // 定义 "/api/austin/weather" 路径
     router.route("/weather").handler(this::handleWeather);
 
+    // 定义 "/api/austin/poem" 路径
+    router.route("/poem").handler(this::handlePoem);
+
     return router;
   }
 
@@ -78,7 +81,30 @@ public class AustinRoutes {
         System.err.println("Error: " + err.getMessage());
         ctx.fail(400);
       });
+  }
 
+  //处理 "/api/austin/poem" 路径的逻辑
+  private void handlePoem(RoutingContext ctx) {
+    // 配置 WebClient（类似 httpx）
+    WebClientOptions options = new WebClientOptions()
+      // 设置超时时间
+      .setConnectTimeout(5000)
+      // 支持 HTTPS
+      .setSsl(true);
+
+    WebClient client = WebClient.create(vertx, options);
+
+    // 创建异步任务
+    sendHttpRequest(client, "https://api.qster.top/API/v1/randpo/")
+      .compose(response -> {
+        ctx.response()
+          .putHeader("Content-Type", "application/json")
+          .end(response.encode());
+        return Future.succeededFuture();
+      }).onFailure(err -> {
+        System.err.println("Error: " + err.getMessage());
+        ctx.fail(400);
+      });
   }
 }
 
