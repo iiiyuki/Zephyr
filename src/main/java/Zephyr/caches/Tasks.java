@@ -7,6 +7,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 /**
  * Task 类用于表示一个任务对象，并支持将任务保存到 ValKey 分布式缓存中。
  * 提供了序列化和反序列化功能，以及支持设置过期时间的缓存操作。
+ * @author tingzhanghuang
  */
 public class Tasks {
   // 任务的唯一标识
@@ -99,7 +100,7 @@ public class Tasks {
    *
    * @param seconds 过期时间（秒）
    */
-  public void saveToValKeyWithExpire(long seconds) {
+  public void saveToValKeyWithExpire(int seconds) {
     try {
       // 将 Task 对象序列化为 JSON 字符串
       ObjectMapper objectMapper = new ObjectMapper();
