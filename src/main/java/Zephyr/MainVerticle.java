@@ -1,5 +1,6 @@
 package Zephyr;
 
+import Zephyr.caches.ValKeyManager;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Promise;
 import io.vertx.core.json.JsonObject;
@@ -19,6 +20,20 @@ public class MainVerticle extends AbstractVerticle {
   public void start(Promise<Void> startPromise) {
     // Initialize dbHelper with Vertx instance
     dbHelper db = new dbHelper(vertx);
+    ValKeyManager valKeyManager = ValKeyManager.getInstance();
+
+    // test valkey connection
+    valKeyManager.set("test", "test");
+    String test = valKeyManager.get("test");
+    if (test == null) {
+      System.err.println("Failed to connect to ValKey.");
+      startPromise.fail("Failed to connect to ValKey.");
+      return;
+    } else if (!"test".equals(test)) {
+      System.err.println("Failed to connect to ValKey.");
+      startPromise.fail("Failed to connect to ValKey.");
+      return;
+    }
 
     // Initialize the database (create table if not exists)
     db.init(ar -> {
@@ -71,6 +86,7 @@ public class MainVerticle extends AbstractVerticle {
     router.route("/healthz").handler(ctx -> {
       JsonObject responseObject = new JsonObject();
       JsonObject dbStatus = new JsonObject();
+      JsonObject valKeyStatus = new JsonObject();
 
       // 执行数据库查询
       try {
@@ -78,6 +94,22 @@ public class MainVerticle extends AbstractVerticle {
       } catch (SQLException e) {
         throw new RuntimeException(e);
       }
+
+      // 执行 valkey 查询
+      ValKeyManager valKeyManager = ValKeyManager.getInstance();
+      var key = "health@"+System.currentTimeMillis();
+      valKeyManager.set(key, "healthy");
+      if (!"healthy".equals(valKeyManager.get(key))) {
+        valKeyStatus.put("success", false)
+          .put("message", "Failed to connect to ValKey.");
+      } else {
+        valKeyManager.del(key);
+        valKeyStatus.put("success", true)
+          .put("message", "ValKey connection is healthy")
+          .put("key", key)
+          .put("value", "healthy");
+      }
+
 
       // 数据库连接正常
       dbStatus.put("success", true)
@@ -87,7 +119,9 @@ public class MainVerticle extends AbstractVerticle {
       responseObject.put("status", "ok")
         .put("message", "Health check passed")
         .put("database", dbStatus)
+        .put("valkey", valKeyStatus)
         .put("timestamp", System.currentTimeMillis());
+
 
       // 在异步回调中发送响应
       ctx.response()
@@ -95,13 +129,16 @@ public class MainVerticle extends AbstractVerticle {
         .end(responseObject.encode());
     });
 
-    // Create HTTP server and bind the router
     vertx.createHttpServer().requestHandler(router).listen(8888).onComplete(http -> {
       if (http.succeeded()) {
-        startPromise.complete();
-        System.out.println("HTTP server started on port 8888");
+        if (!startPromise.future().isComplete()) { // 检查是否已完成
+          startPromise.complete();
+          System.out.println("HTTP server started on port 8888");
+        }
       } else {
-        startPromise.fail(http.cause());
+        if (!startPromise.future().isComplete()) { // 检查是否已完成
+          startPromise.fail(http.cause());
+        }
       }
     });
   }

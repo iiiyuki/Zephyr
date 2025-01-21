@@ -56,7 +56,7 @@ dependencies {
   implementation("com.github.ben-manes.caffeine:caffeine:$caffeineVersion")
   implementation("org.hibernate:hibernate-entitymanager:$hibernateEntityManagerVersion")
   implementation("com.zaxxer:HikariCP:$hikariCPVersion")
-  implementation("com.fasterxml.jackson.core:jackson-databind:2.15.2")
+  implementation("com.fasterxml.jackson.core:jackson-databind:2.18.2")
   implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.18.2")
   implementation("org.hibernate:hibernate-c3p0:$hibernateCoreVersion")
   implementation("mysql:mysql-connector-java:$mysqlConnectorVersion")
