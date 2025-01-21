@@ -82,56 +82,12 @@ public class JackRoutes {
         }
       }
     });
-      
+
     /**
      * 添加一个关键词
      * 前端传入Json对象，提取其input字段，写入数据库
      */
-    router.post("submit/keyword").handler( ctx-> {
-      //获取请求体
-      RequestBody body = ctx.body();
-      //转化为JSON对象
-      JsonObject object = body.asJsonObject();
-      String keyword = object.getString("input");
-      EntityManager entityManager = dbHelper.getEntityManagerFactory().createEntityManager();
-      //提取所有已知的可疑关键词
-      List<AcceptedSequences> acceptedSequences =
-        entityManager
-          .createQuery("SELECT a FROM AcceptedSequences a", AcceptedSequences.class)
-          .getResultList();
-      //如关键词已存在，则避免覆盖它
-      for (AcceptedSequences acceptedSequences1: acceptedSequences){
-        if(acceptedSequences1.getList().getFirst().equals(keyword)){
-          ctx.fail(400);
-        }
-      }
-      entityManager.close();
-      //遍历完成仍不存在，存入新关键词
-      entityManager = dbHelper.getEntityManagerFactory().createEntityManager();
-      try {
-        // Begin a transaction
-        entityManager.getTransaction().begin();
-
-          // 创建一个新AcceptedSequences对象
-          AcceptedSequences newSequence = new AcceptedSequences();
-          newSequence.setContent(keyword);
-          newSequence.setTimeStampString(""+System.currentTimeMillis());
-          // Persist the new sequence
-          entityManager.persist(newSequence);
-
-        // Commit the transaction
-        entityManager.getTransaction().commit();
-      } catch (Exception e) {
-        // Rollback the transaction in case of errors
-        if (entityManager.getTransaction().isActive()) {
-          entityManager.getTransaction().rollback();
-        }
-        ctx.response().setStatusCode(500).end("Error: " + e.getMessage());
-      } finally {
-        // Close the entity manager
-        entityManager.close();
-      }
-    });
+    router.post("/submit/keyword").handler(this::handleKeywordSubmit);
 
     return router;
   }
@@ -159,6 +115,52 @@ public class JackRoutes {
     ctx.response()
       .putHeader("Content-Type", "application/json")
       .end(response.encode());
+  }
+
+  private void handleKeywordSubmit(RoutingContext ctx){
+    //获取请求体
+    RequestBody body = ctx.body();
+    //转化为JSON对象
+    JsonObject object = body.asJsonObject();
+    String keyword = object.getString("input");
+    EntityManager entityManager = dbHelper.getEntityManagerFactory().createEntityManager();
+    //提取所有已知的可疑关键词
+    List<AcceptedSequences> acceptedSequences =
+      entityManager
+        .createQuery("SELECT a FROM AcceptedSequences a", AcceptedSequences.class)
+        .getResultList();
+    //如关键词已存在，则避免覆盖它
+    for (AcceptedSequences acceptedSequences1: acceptedSequences){
+      if(acceptedSequences1.getList().getFirst().equals(keyword)){
+        ctx.fail(400);
+      }
+    }
+    entityManager.close();
+    //遍历完成仍不存在，存入新关键词
+    entityManager = dbHelper.getEntityManagerFactory().createEntityManager();
+    try {
+      // Begin a transaction
+      entityManager.getTransaction().begin();
+
+      // 创建一个新AcceptedSequences对象
+      AcceptedSequences newSequence = new AcceptedSequences();
+      newSequence.setContent(keyword);
+      newSequence.setTimeStampString(""+System.currentTimeMillis());
+      // Persist the new sequence
+      entityManager.persist(newSequence);
+
+      // Commit the transaction
+      entityManager.getTransaction().commit();
+    } catch (Exception e) {
+      // Rollback the transaction in case of errors
+      if (entityManager.getTransaction().isActive()) {
+        entityManager.getTransaction().rollback();
+      }
+      ctx.response().setStatusCode(500).end("Error: " + e.getMessage());
+    } finally {
+      // Close the entity manager
+      entityManager.close();
+    }
   }
 
   //关键词检测器 A naive approach of a text-based fraud detector.
