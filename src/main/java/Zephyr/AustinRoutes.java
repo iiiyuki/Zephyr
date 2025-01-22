@@ -125,64 +125,72 @@ public class AustinRoutes {
     ctx.request().bodyHandler(buffer -> {
       JsonObject body = buffer.toJsonObject();
       log.info("Received body: " + body.encode());
-      //todo 为什么这里输出为空
+
+      // 获取请求体中的 title 和 id
       String title = body.getString("title");
+      Long id = body.getLong("id", null); // 如果 id 不存在，默认为 null
+
       log.info("Received title: " + title);
-      //todo 为什么这里输出为空
       ctx.response()
         .setStatusCode(200)
         .putHeader("Content-Type", "application/json");
-      // 假设要查找或更新 ID 为 1 的实体
-      Long id = 1L;
 
-      // Get the entity manager
+      // 获取 EntityManager
       EntityManager entityManager = dbHelper.getEntityManagerFactory().createEntityManager();
 
       try {
-        // Begin a transaction
+        // 开始事务
         entityManager.getTransaction().begin();
 
-        // 查找现有的服务
-        Todo exisitingTodo = entityManager.find(Todo.class, id);
-        if (exisitingTodo != null) {
-          // 更新现有服务
-          exisitingTodo.setTitle(title);
+        Todo todo;
+        if (id != null) {
+          // 如果提供了 ID，则尝试查找现有记录
+          todo = entityManager.find(Todo.class, id);
+          if (todo != null) {
+            log.info("Updating existing Todo with ID: " + id);
+            todo.setTitle(title); // 更新现有记录
+          } else {
+            ctx.response()
+              .setStatusCode(404)
+              .end(new JsonObject().put("error", "Todo with ID " + id + " not found").encode());
+            entityManager.getTransaction().rollback();
+            return;
+          }
         } else {
-          // 如果服务不存在，则创建一个新服务
-          Todo newService = new Todo();
-          newService.setTitle(title);
-
-          // Persist the new service
-          entityManager.persist(newService);
+          // 如果未提供 ID，则创建新的 Todo
+          log.info("Creating a new Todo");
+          todo = new Todo();
+          todo.setTitle(title);
+          entityManager.persist(todo); // 持久化新记录
         }
 
-        // Commit the transaction
+        // 提交事务
         entityManager.getTransaction().commit();
+
+        // 构建响应
+        JsonObject response = new JsonObject()
+          .put("status", "ok")
+          .put("id", todo.getId())
+          .put("title", todo.getTitle());
+        ctx.response()
+          .putHeader("Content-Type", "application/json")
+          .end(response.encode());
+
       } catch (Exception e) {
-        // Rollback the transaction in case of errors
+        // 事务出错时回滚
         if (entityManager.getTransaction().isActive()) {
           entityManager.getTransaction().rollback();
         }
-        ctx.response().setStatusCode(500).end("Error: " + e.getMessage());
+        ctx.response()
+          .setStatusCode(500)
+          .end("Error: " + e.getMessage());
       } finally {
-        // Close the entity manager
+        // 关闭 EntityManager
         entityManager.close();
       }
-
-      // 新EntityManager
-      entityManager = dbHelper.getEntityManagerFactory().createEntityManager();
-
-      // 从数据库中查询所有服务
-//      List<Todo> services = entityManager.createQuery("SELECT s FROM Todo s", Todo.class).getResultList();
-//      JsonObject response = new JsonObject()
-//        .put("status", "ok")
-//        .put("title", title);
-//      entityManager.close();
-//      ctx.response()
-//        .putHeader("Content-Type", "application/json")
-//        .end(response.encode());
-  });
+    });
   }
+
 }
 
 
