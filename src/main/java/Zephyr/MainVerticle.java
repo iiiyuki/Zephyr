@@ -63,6 +63,14 @@ public class MainVerticle extends AbstractVerticle {
       // 设置响应头中的 requestId
       ctx.response().putHeader("X-Request-Id", requestId);
 
+      if (ctx.request().path().equals("/api/jack/analyze/text/uploads")) {
+        if (ctx.fileUploads().isEmpty()) {
+          // 如果没有文件上传，返回 400 错误
+          ctx.fail(400);
+          return;
+        }
+      }
+
       // 调用下一个处理器
       ctx.next();
     });
