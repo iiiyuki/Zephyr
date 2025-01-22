@@ -11,6 +11,7 @@ import io.vertx.ext.web.client.WebClientOptions;
 import jakarta.persistence.EntityManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import io.vertx.ext.web.handler.BodyHandler;
 
 import java.util.List;
 
@@ -43,9 +44,9 @@ public class AustinRoutes {
     // 定义 "/api/austin/poem" 路径
     router.route("/poem").handler(this::handlePoem);
 
-    // 定义 "/api/austin/todo" 路径
-    router.post("/todoList").handler(this::handleTodo);
-//    router.route().handler(BodyHandler.create());
+    // 定义 "/api/austin/todolist" 路径
+    router.post("/todolist").handler(this::handleTodo);
+    router.route().handler(BodyHandler.create());
 
 
     return router;
@@ -119,7 +120,7 @@ public class AustinRoutes {
       });
   }
 
-  //处理 "/api/austin/todoList" 路径的逻辑
+  //处理 "/api/austin/todolist" 路径的逻辑
   private void handleTodo(RoutingContext ctx) {
     ctx.request().bodyHandler(buffer -> {
       JsonObject body = buffer.toJsonObject();
@@ -172,14 +173,14 @@ public class AustinRoutes {
       entityManager = dbHelper.getEntityManagerFactory().createEntityManager();
 
       // 从数据库中查询所有服务
-      List<Todo> services = entityManager.createQuery("SELECT s FROM Todo s", Todo.class).getResultList();
-      JsonObject response = new JsonObject()
-        .put("status", "ok")
-        .put("title", title);
-      entityManager.close();
-      ctx.response()
-        .putHeader("Content-Type", "application/json")
-        .end(response.encode());
+//      List<Todo> services = entityManager.createQuery("SELECT s FROM Todo s", Todo.class).getResultList();
+//      JsonObject response = new JsonObject()
+//        .put("status", "ok")
+//        .put("title", title);
+//      entityManager.close();
+//      ctx.response()
+//        .putHeader("Content-Type", "application/json")
+//        .end(response.encode());
   });
   }
 }
