@@ -198,12 +198,12 @@ public class AustinRoutes {
   private void handleGetList(RoutingContext ctx) {
     EntityManager entityManager = dbHelper.getEntityManagerFactory().createEntityManager();
     List<Todo> todos = entityManager.createQuery("SELECT t FROM Todo t", Todo.class).getResultList();
+    entityManager.close();
     JsonObject response = new JsonObject()
       .put("status", "ok")
       .put("message", "Get Todo List Success")
       .put("timestamp", System.currentTimeMillis())
       .put("todos", todos);
-    entityManager.close();
     ctx.response()
       .putHeader("Content-Type", "application/json")
       .end(response.encode());
