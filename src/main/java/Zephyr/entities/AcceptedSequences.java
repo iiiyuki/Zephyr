@@ -25,7 +25,14 @@ public class AcceptedSequences {
   private String content;
 
   @Column(name = "created_at", nullable = false)
+  private String createdAt;
+
+  @Column(name = "last_updated_at", nullable = false)
   private String timeStampString;
+
+  //权重，取决于用户举报次数
+  @Column(name = "rate" , nullable = false)
+  private int rate;
 
   public List<String> getList(){
     List<String> list = new ArrayList<>();
@@ -50,4 +57,20 @@ public class AcceptedSequences {
     public void setId(Long id){
       this.id = id;
     }
+
+  public int getRate() {
+    return rate;
+  }
+
+  public void setRate(int rate) {
+    this.rate = rate;
+  }
+
+  public String getCreatedAt() {
+    return createdAt;
+  }
+
+  public void setCreatedAt(String createdAt) {
+    this.createdAt = createdAt;
+  }
 }
