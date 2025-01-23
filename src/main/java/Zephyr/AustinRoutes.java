@@ -48,6 +48,9 @@ public class AustinRoutes {
     router.post("/todolist").handler(this::handleTodo);
     router.route().handler(BodyHandler.create());
 
+    // 定义 "/api/austin/getlist" 路径
+    router.get("/getlist").handler(this::handleGetList);
+
 
     return router;
   }
@@ -191,6 +194,20 @@ public class AustinRoutes {
     });
   }
 
+  //"api/austin/getlist" 获取所有的todolist
+  private void handleGetList(RoutingContext ctx) {
+    EntityManager entityManager = dbHelper.getEntityManagerFactory().createEntityManager();
+    List<Todo> todos = entityManager.createQuery("SELECT t FROM Todo t", Todo.class).getResultList();
+    entityManager.close();
+    JsonObject response = new JsonObject()
+      .put("status", "ok")
+      .put("message", "Get Todo List Success")
+      .put("timestamp", System.currentTimeMillis())
+      .put("todos", todos);
+    ctx.response()
+      .putHeader("Content-Type", "application/json")
+      .end(response.encode());
+  }
 }
 
 
