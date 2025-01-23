@@ -83,6 +83,26 @@ public class JackRoutes {
           </form>""");
     });
 
+    router.post("/analyze/text/uploads").handler(ctx -> {
+      List<FileUpload> uploads = ctx.fileUploads();
+      for(FileUpload u:uploads){
+        String fileName = u.fileName();
+        String tail = fileName.substring(fileName.lastIndexOf("."));
+        if ("text/plain".equals(u.contentType())
+          &&".txt".equals(tail)
+          &&"UTF-8".equals(u.charSet())
+          &&u.size()<=50000)
+          //校验通过，开始处置
+        {
+          handleFileUpload(ctx, u);
+        } else{
+          //校验不通过，强制删除
+          ctx.fail(400);
+
+        }
+      }
+    });
+
     /**
      * 添加一个关键词
      * 前端传入Json对象，提取其input字段，写入数据库
@@ -293,6 +313,7 @@ public class JackRoutes {
     }
     return new int[]{res, lines};
   }
+
   // orm test
   private void testOrm(RoutingContext ctx) {
     // 假设要查找或更新 ID 为 1 的实体

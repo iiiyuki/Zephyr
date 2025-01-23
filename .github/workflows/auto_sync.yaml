@@ -7,25 +7,26 @@ permissions:
 
 on:
   schedule:
-    - cron: '*/20 * * * *' # every 20 minutes
+    - cron: '*/20 * * * *' # 每 20 分钟触发
   workflow_dispatch:
 
 jobs:
   sync_latest_from_upstream:
     name: Sync latest commits from upstream repo
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     if: ${{ github.event.repository.fork }}
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       - name: Import GPG key
-        uses: crazy-max/ghaction-import-gpg@v6 # or whatever is latest
+        uses: crazy-max/ghaction-import-gpg@v6
         with:
-            gpg_private_key: ${{ secrets.GPG_KEY }}
-            passphrase: ${{ secrets.PASSPHRASE }}
-            git_user_signingkey: true    # sets GPG key
-            git_commit_gpgsign: true     # sets all commits to use signing (no need to modify sync args)
+          gpg_private_key: ${{ secrets.GPG_KEY }}
+          passphrase: ${{ secrets.PASSPHRASE }}
+          git_user_signingkey: true
+          git_commit_gpgsign: true
 
       - name: Sync upstream changes
         id: sync
@@ -34,8 +35,16 @@ jobs:
           upstream_sync_repo: iiiyuki/Zephyr
           upstream_sync_branch: master
           target_sync_branch: master
-          target_repo_token: ${{ secrets.GITHUB_TOKEN }} # automatically generated, no need to set
+          target_repo_token: ${{ secrets.GITHUB_TOKEN }}
           test_mode: false
+
+      - name: Resolve push conflicts
+        if: failure()
+        run: |
+          echo "Resolving conflicts due to non-fast-forward updates..."
+          git fetch origin master
+          git merge --strategy-option=theirs origin/master
+          git push origin HEAD:master --force-with-lease
 
       - name: Sync check
         if: failure()
@@ -45,11 +54,6 @@ jobs:
           title: '🚨 同步失败 | Sync Fail'
           labels: '🚨 Sync Fail'
           body: |
-            Due to a change in the workflow file of the upstream repository, GitHub has automatically suspended the scheduled automatic update. You need to manually sync your fork. Please refer to the detailed [Tutorial][tutorial-en-US] for instructions.
+            Due to a conflict or other error, the sync action failed. Please review the logs for details and retry the sync manually if necessary.
 
-            由于 上游仓库的 workflow 文件变更，导致 GitHub 自动暂停了本次自动更新，你需要手动 Sync Fork 一次，请查看 [详细教程][tutorial-zh-CN]
-
-            ![](https://github-production-user-asset-6210df.s3.amazonaws.com/17870709/273954625-df80c890-0822-4ac2-95e6-c990785cbed5.png)
-
-            [tutorial-zh-CN]: https://github.com/lobehub/lobe-chat/wiki/Upstream-Sync.zh-CN
-            [tutorial-en-US]: https://github.com/lobehub/lobe-chat/wiki/Upstream-Sync
+            由于冲突或其他错误，Sync Action 执行失败。请查看日志获取详细信息，必要时手动同步。
