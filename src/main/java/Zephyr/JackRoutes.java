@@ -314,6 +314,20 @@ public class JackRoutes {
     return new int[]{res, lines};
   }
 
+  private void submitKeyWord(String keyword){
+    EntityManager entityManager = dbHelper.getEntityManagerFactory().createEntityManager();
+    //提取所有已知的可疑关键词
+    List<AcceptedSequences> acceptedSequences =
+      entityManager
+        .createQuery("SELECT a From AcceptedSequences a", AcceptedSequences.class)
+        .getResultList();
+    for (AcceptedSequences acceptedSequences1: acceptedSequences){
+      if(acceptedSequences1.getList().getFirst().equals(keyword)){
+
+      }
+    }
+  }
+
   // orm test
   private void testOrm(RoutingContext ctx) {
     // 假设要查找或更新 ID 为 1 的实体
