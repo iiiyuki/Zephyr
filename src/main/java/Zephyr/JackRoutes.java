@@ -4,6 +4,7 @@ import Zephyr.entities.AcceptedSequences;
 import Zephyr.entities.Service;
 import Zephyr.entities.Uploads;
 import io.vertx.ext.web.FileUpload;
+import io.vertx.ext.web.RequestBody;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.core.Vertx;
@@ -19,7 +20,6 @@ import java.util.*;
 
 /**
  * @author Jingyu Wang
- * 待更新：关键词标记器
  */
 public class JackRoutes {
 
@@ -49,7 +49,10 @@ public class JackRoutes {
       .setDeleteUploadedFilesOnEnd(true)
       .setHandleFileUploads(true)
       .setUploadsDirectory(Paths.get("Zephyr", "uploads").toString())
-      .setMergeFormAttributes(true));
+      .setMergeFormAttributes(true))
+      .failureHandler(ctx -> {
+        ctx.response().setStatusCode(400).end("Bad Request");
+      });
 
     router.get("/analyze/text/uploads").handler(ctx -> {
       // get method return html form for uploading text files
@@ -75,11 +78,17 @@ public class JackRoutes {
           handleFileUpload(ctx, u);
         } else{
           //校验不通过，强制删除
-          uploads.remove(u);
           ctx.fail(400);
+
         }
       }
     });
+
+    /**
+     * 添加一个关键词
+     * 前端传入Json对象，提取其input字段，写入数据库
+     */
+    router.post("/submit/keyword").handler(this::handleKeywordSubmit);
 
     return router;
   }
@@ -107,6 +116,67 @@ public class JackRoutes {
     ctx.response()
       .putHeader("Content-Type", "application/json")
       .end(response.encode());
+  }
+
+  private void handleKeywordSubmit(RoutingContext ctx){
+    //获取请求体
+    RequestBody body = ctx.body();
+    //转化为JSON对象
+    JsonObject object = body.asJsonObject();
+    String keyword = object.getString("input");
+    EntityManager entityManager = dbHelper.getEntityManagerFactory().createEntityManager();
+    //提取所有已知的可疑关键词
+    List<AcceptedSequences> acceptedSequences =
+      entityManager
+        .createQuery("SELECT a FROM AcceptedSequences a", AcceptedSequences.class)
+        .getResultList();
+    //如关键词已存在，则增加它的权重1,并返回
+    for (AcceptedSequences acceptedSequences1: acceptedSequences){
+      if(acceptedSequences1.getList().getFirst().equals(keyword)){
+        acceptedSequences1.setRate(acceptedSequences1.getRate()+1);
+        acceptedSequences1.setTimeStampString(""+System.currentTimeMillis());
+        return;
+      }
+    }
+    entityManager.close();
+    entityManager = dbHelper.getEntityManagerFactory().createEntityManager();
+    //遍历完成仍不存在，存入新关键词
+    try {
+      // Begin a transaction
+      entityManager.getTransaction().begin();
+
+      // 创建一个新AcceptedSequences对象
+
+      AcceptedSequences newSequence = new AcceptedSequences();
+      newSequence.setContent(keyword);
+      newSequence.setTimeStampString(""+System.currentTimeMillis());
+      newSequence.setRate(1);
+      newSequence.setCreatedAt(""+System.currentTimeMillis()
+      );
+      // Persist the new sequence
+      entityManager.persist(newSequence);
+
+      // Commit the transaction
+      entityManager.getTransaction().commit();
+    } catch (Exception e) {
+      // Rollback the transaction in case of errors
+      if (entityManager.getTransaction().isActive()) {
+        entityManager.getTransaction().rollback();
+      }
+      ctx.response().setStatusCode(500).end("Error: " + e.getMessage());
+    } finally {
+      // Close the entity manager
+      entityManager.close();
+      //return response
+      JsonObject response = new JsonObject()
+        .put("status", "uploaded")
+        .put("content", keyword)
+        .put("timestamp", System.currentTimeMillis());
+
+      ctx.response()
+        .putHeader("Content-Type", "application/json")
+        .end(response.encode());
+    }
   }
 
   //关键词检测器 A naive approach of a text-based fraud detector.
@@ -153,23 +223,22 @@ public class JackRoutes {
     for(Uploads upload:uploads){
       //如果列表中有指定路径元素，说明提取正确
       if(upload.getFilePath().equals(path.toString())) {
-        //发现可疑关键词
-        if (processFile(upload.getFilePath())) {
+        //发现可疑关键词,且全文平均权重超过指定阈值(10)，返回alarmed状态
+        if (processFile(upload.getFilePath())[0]/processFile(upload.getFilePath())[1]>=10) {
           JsonObject response = new JsonObject()
             .put("status", "uploaded")
             .put("dir", path.toString())
-            //返回alarmed状态
             .put("result", "alarmed")
             .put("timestamp", System.currentTimeMillis());
 
           ctx.response()
             .putHeader("Content-Type", "application/json")
             .end(response.encode());
+          //如果全文平均权重未超过指定阈值，返回unalarmed状态
         } else {
           JsonObject response = new JsonObject()
             .put("status", "uploaded")
             .put("dir", path.toString())
-            //检测通过
             .put("result", "unalarmed")
             .put("timestamp", System.currentTimeMillis());
 
@@ -185,34 +254,35 @@ public class JackRoutes {
     ctx.fail(404);
   }
 
-  private boolean processFile(String path) {
+  private int[] processFile(String path) {
     /*施工中*/
-    EntityManager entityManager = dbHelper.getEntityManagerFactory().createEntityManager();
-    //提取所有已知的可疑关键词
-    List<AcceptedSequences> acceptedSequences =
-      entityManager
+    int res = 0;
+    int lines = 0;
+    List<AcceptedSequences> acceptedSequences;
+    try (EntityManager entityManager = dbHelper.getEntityManagerFactory().createEntityManager()) {
+      //提取所有已知的可疑关键词
+      acceptedSequences = entityManager
         .createQuery("SELECT a FROM AcceptedSequences a", AcceptedSequences.class)
         .getResultList();
+    }
     String line;
-//    try{
-//      FileReader reader = new FileReader(path);
-//      BufferedReader br = new BufferedReader(reader);
-//      while((line = br.readLine())!=null){
-//        for (AcceptedSequences sequence: acceptedSequences){
-//          if (line.contains(sequence.getAcceptedSequence())){
-//            //全文任何部分发现关键词，视为检测到关键词
-//            return true;
-//          }
-//        }
-//      }
-//      //文件结尾仍未发现关键词，视为未检测到关键词
-//      return false;
-//    } catch (IOException e) {
-//      throw new RuntimeException(e);
-//    }
-    return false;
+    try{
+      FileReader reader = new FileReader(path);
+      BufferedReader br = new BufferedReader(reader);
+      while((line = br.readLine())!=null){
+        for (AcceptedSequences sequence: acceptedSequences){
+          if (line.contains(sequence.getList().getFirst())){
+            //全文任何部分发现关键词，视为检测到关键词
+            res+=sequence.getRate();
+          }
+        }
+        lines++;
+      }
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+    return new int[]{res, lines};
   }
-
   // orm test
   private void testOrm(RoutingContext ctx) {
     // 假设要查找或更新 ID 为 1 的实体
