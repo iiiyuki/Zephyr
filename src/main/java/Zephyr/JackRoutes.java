@@ -49,10 +49,29 @@ public class JackRoutes {
       .setDeleteUploadedFilesOnEnd(true)
       .setHandleFileUploads(true)
       .setUploadsDirectory(Paths.get("Zephyr", "uploads").toString())
-      .setMergeFormAttributes(true))
-      .failureHandler(ctx -> {
-        ctx.response().setStatusCode(400).end("Bad Request");
-      });
+      .setMergeFormAttributes(true)
+    );
+
+    router.post("/analyze/text/uploads").handler(ctx -> {
+      ctx.fail(402);
+//      List<FileUpload> uploads = ctx.fileUploads();
+//      for(FileUpload u:uploads){
+//        String fileName = u.fileName();
+//        String tail = fileName.substring(fileName.lastIndexOf("."));
+//        if ("text/plain".equals(u.contentType())
+//          &&".txt".equals(tail)
+//          &&"UTF-8".equals(u.charSet())
+//          &&u.size()<=50000)
+//          //校验通过，开始处置
+//        {
+//          handleFileUpload(ctx, u);
+//        } else{
+//          //校验不通过，强制删除
+//          ctx.fail(400);
+//
+//        }
+//      }
+    });
 
     router.get("/analyze/text/uploads").handler(ctx -> {
       // get method return html form for uploading text files
@@ -62,26 +81,6 @@ public class JackRoutes {
             <input type="file" name="file" accept=".txt">
             <input type="submit" value="Upload">
           </form>""");
-    });
-
-    router.post("/analyze/text/uploads").handler(ctx -> {
-      List<FileUpload> uploads = ctx.fileUploads();
-      for(FileUpload u:uploads){
-        String fileName = u.fileName();
-        String tail = fileName.substring(fileName.lastIndexOf("."));
-        if ("text/plain".equals(u.contentType())
-          &&".txt".equals(tail)
-          &&"UTF-8".equals(u.charSet())
-          &&u.size()<=50000)
-          //校验通过，开始处置
-        {
-          handleFileUpload(ctx, u);
-        } else{
-          //校验不通过，强制删除
-          ctx.fail(400);
-
-        }
-      }
     });
 
     /**
@@ -131,10 +130,21 @@ public class JackRoutes {
         .createQuery("SELECT a FROM AcceptedSequences a", AcceptedSequences.class)
         .getResultList();
     //如关键词已存在，则增加它的权重1,并返回
-    for (AcceptedSequences acceptedSequences1: acceptedSequences){
-      if(acceptedSequences1.getList().getFirst().equals(keyword)){
-        acceptedSequences1.setRate(acceptedSequences1.getRate()+1);
-        acceptedSequences1.setTimeStampString(""+System.currentTimeMillis());
+    for(int i=0;i<acceptedSequences.size();i++){
+      if(acceptedSequences.get(i).getList().getFirst().equals(keyword)){
+        acceptedSequences.get(i).setRate(acceptedSequences.get(i).getRate()+1);
+        entityManager.getTransaction().begin();
+        entityManager.persist(acceptedSequences.get(i));
+        entityManager.getTransaction().commit();
+        entityManager.close();
+        JsonObject response = new JsonObject()
+          .put("status", "uploaded")
+          .put("content", keyword)
+          .put("timestamp", System.currentTimeMillis());
+
+        ctx.response()
+          .putHeader("Content-Type", "application/json")
+          .end(response.encode());
         return;
       }
     }

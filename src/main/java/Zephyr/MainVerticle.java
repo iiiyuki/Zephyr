@@ -5,7 +5,9 @@ import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Promise;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
+import io.vertx.ext.web.handler.BodyHandler;
 
+import java.nio.file.Paths;
 import java.sql.SQLException;
 
 /**
@@ -70,6 +72,15 @@ public class MainVerticle extends AbstractVerticle {
           return;
         }
       }
+
+      router.route().handler(BodyHandler.create()
+        .setBodyLimit(50000)
+        //处理后自动移除
+        .setDeleteUploadedFilesOnEnd(true)
+        .setHandleFileUploads(true)
+        .setUploadsDirectory(Paths.get("Zephyr", "uploads").toString())
+        .setMergeFormAttributes(true)
+      );
 
       // 调用下一个处理器
       ctx.next();
