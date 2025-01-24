@@ -5,7 +5,9 @@ import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Promise;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
+import io.vertx.ext.web.handler.BodyHandler;
 
+import java.nio.file.Paths;
 import java.sql.SQLException;
 
 /**
@@ -63,13 +65,22 @@ public class MainVerticle extends AbstractVerticle {
       // 设置响应头中的 requestId
       ctx.response().putHeader("X-Request-Id", requestId);
 
-      if ("/api/jack/analyze/text/uploads".equals(ctx.request().path())) {
-        if (ctx.fileUploads().isEmpty() && !"GET".equals(ctx.request().method().name())) {
+      if (ctx.request().path().equals("/api/jack/analyze/text/uploads")) {
+        if (ctx.fileUploads().isEmpty()) {
           // 如果没有文件上传，返回 400 错误
           ctx.fail(400);
           return;
         }
       }
+
+      router.route().handler(BodyHandler.create()
+        .setBodyLimit(50000)
+        //处理后自动移除
+        .setDeleteUploadedFilesOnEnd(true)
+        .setHandleFileUploads(true)
+        .setUploadsDirectory(Paths.get("Zephyr", "uploads").toString())
+        .setMergeFormAttributes(true)
+      );
 
       // 调用下一个处理器
       ctx.next();
