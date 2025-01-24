@@ -6,9 +6,9 @@ import io.vertx.core.Promise;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.BodyHandler;
+import jakarta.persistence.EntityManager;
 
 import java.nio.file.Paths;
-import java.sql.SQLException;
 
 /**
  * Main Verticle for the application
@@ -65,7 +65,7 @@ public class MainVerticle extends AbstractVerticle {
       // 设置响应头中的 requestId
       ctx.response().putHeader("X-Request-Id", requestId);
 
-      if (ctx.request().path().equals("/api/jack/analyze/text/uploads")) {
+      if ("/api/jack/analyze/text/uploads".equals(ctx.request().path())) {
         if (ctx.fileUploads().isEmpty()) {
           // 如果没有文件上传，返回 400 错误
           ctx.fail(400);
@@ -109,9 +109,22 @@ public class MainVerticle extends AbstractVerticle {
 
       // 执行数据库查询
       try {
-        db.getConnection().createStatement().executeQuery("SELECT 1");
-      } catch (SQLException e) {
-        throw new RuntimeException(e);
+        EntityManager entityManager = dbHelper.getEntityManagerFactory().createEntityManager();
+        entityManager.createNativeQuery("SELECT 1").getSingleResult();
+        entityManager.close();
+        // 数据库连接正常
+        dbStatus.put("success", true)
+          .put("message", "Database connection is healthy");
+      } catch (Exception e) {
+        dbStatus.put("success", false)
+          .put("message", "Failed to connect to database.");
+        responseObject.put("status", "error")
+          .put("message", "Health check failed")
+          .put("database", dbStatus)
+          .put("valkey", valKeyStatus)
+          .put("timestamp", System.currentTimeMillis());
+        ctx.fail(500);
+        return;
       }
 
       // 执行 valkey 查询
@@ -128,11 +141,6 @@ public class MainVerticle extends AbstractVerticle {
           .put("key", key)
           .put("value", "healthy");
       }
-
-
-      // 数据库连接正常
-      dbStatus.put("success", true)
-        .put("message", "Database connection is healthy");
 
       // 构建最终的响应对象
       responseObject.put("status", "ok")
