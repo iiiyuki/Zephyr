@@ -2,165 +2,157 @@ package Zephyr;
 
 import Zephyr.caches.ValKeyManager;
 import io.vertx.core.AbstractVerticle;
+import io.vertx.core.Future;
 import io.vertx.core.Promise;
+import io.vertx.core.impl.logging.Logger;
+import io.vertx.core.impl.logging.LoggerFactory;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
+import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
 import jakarta.persistence.EntityManagerFactory;
 
 import java.nio.file.Paths;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 /**
  * Main Verticle for the application
  * @author binaryYuki
  */
 public class MainVerticle extends AbstractVerticle {
-
-  private DatabaseQueue databaseQueue;
+  private static final Logger logger = LoggerFactory.getLogger(MainVerticle.class);
 
   @Override
   public void start(Promise<Void> startPromise) {
-    // Initialize dbHelper with Vertx instance
+    logger.info("Starting MainVerticle initialization...");
+
+    // 初始化 dbHelper 和 ValKey
+    initializeServices()
+      .compose(v -> {
+        // 配置 HTTP 服务器
+        Router router = setupHttpServer();
+        vertx.createHttpServer()
+          .requestHandler(router)
+          .listen(8888);
+        return Future.succeededFuture();
+      })
+      .onSuccess(ok -> {
+        startPromise.complete();
+        logger.info("MainVerticle started successfully.");
+      })
+      .onFailure(err -> {
+        startPromise.fail(err);
+        logger.error("Failed to start MainVerticle: {}");
+
+      });
+  }
+
+  private Future<Void> initializeServices() {
+    Promise<Void> promise = Promise.promise();
+
     dbHelper db = new dbHelper(vertx);
     ValKeyManager valKeyManager = ValKeyManager.getInstance();
 
-    // test valkey connection
+    // 测试 ValKey 连接
     valKeyManager.set("test", "test");
     String test = valKeyManager.get("test");
-    if (test == null) {
-      System.err.println("Failed to connect to ValKey.");
-      startPromise.fail("Failed to connect to ValKey.");
-      return;
-    } else if (!"test".equals(test)) {
-      System.err.println("Failed to connect to ValKey.");
-      startPromise.fail("Failed to connect to ValKey.");
-      return;
+    if (!"test".equals(test)) {
+      logger.error("Failed to connect to ValKey. Value mismatch.");
+      promise.fail("Failed to connect to ValKey");
+    } else {
+      logger.info("ValKey initialized and verified successfully.");
     }
 
-    // Initialize the database (create table if not exists)
+    // 初始化数据库
     db.init(ar -> {
       if (ar.succeeded()) {
-        System.out.println("Database initialized successfully.");
-        setupHttpServer(startPromise, db);
+        logger.info("Database initialized successfully.");
+        promise.complete();
       } else {
-        System.err.println("Failed to initialize database: " + ar.cause().getMessage());
-        startPromise.fail(ar.cause());
+        logger.error("Database initialization failed: {}" + ar.cause().getMessage());
+        promise.fail(ar.cause());
       }
     });
 
-    // Initialize DatabaseQueue
-    databaseQueue = new DatabaseQueue(5);
+    return promise.future();
   }
 
-  private void setupHttpServer(Promise<Void> startPromise, dbHelper db) {
+  private Router setupHttpServer() {
     // Create the main Router
     Router router = Router.router(vertx);
 
-    // 添加 requestId 和 process time 中间件
+    // 通用路由配置
     router.route().handler(ctx -> {
-
-      // 生成 requestId 长度：16位
       String requestId = IdGenerator.generateRequestId();
-
-      // 设置响应头中的 requestId
       ctx.response().putHeader("X-Request-Id", requestId);
+      logger.debug("Request ID generated: {}");
+      ctx.next();
+    });
 
-      if ("/api/jack/analyze/text/uploads".equals(ctx.request().path())) {
-        if (ctx.fileUploads().isEmpty()) {
-          // 如果没有文件上传，返回 400 错误
-          ctx.fail(400);
-          return;
-        }
-      }
-
-      router.route().handler(BodyHandler.create()
-        .setBodyLimit(50000)
-        //处理后自动移除
+    // 添加 BodyHandler
+    router.route().handler(BodyHandler.create()
+        .setBodyLimit(50_000)
         .setDeleteUploadedFilesOnEnd(true)
         .setHandleFileUploads(true)
         .setUploadsDirectory(Paths.get("Zephyr", "uploads").toString())
         .setMergeFormAttributes(true)
       );
 
-      // 调用下一个处理器
-      ctx.next();
-    });
+      // 配置子路由
+      router.route("/api/jack/*").subRouter(new JackRoutes(vertx).getSubRouter());
+      router.route("/api/austin/*").subRouter(new AustinRoutes(vertx).getSubRouter());
+      router.route("/api/v1/*").subRouter(new YukiRoutes(vertx).getSubRouter());
 
-    // Create Jack and Austin route instances
-    JackRoutes jackRoutes = new JackRoutes(vertx);
-    AustinRoutes austinRoutes = new AustinRoutes(vertx);
+      // 添加健康检查路由
+      router.get("/healthz").handler(this::handleHealthCheck);
 
-    // Mount sub-routers to "/api/jack" and "/api/austin"
-    router.route("/api/jack/*").subRouter(jackRoutes.getSubRouter());
-    router.route("/api/austin/*").subRouter(austinRoutes.getSubRouter());
-    router.route("/api/v1/*").subRouter(new YukiRoutes(vertx).getSubRouter());
-    router.route("/api").handler(ctx -> ctx.response()
-      .putHeader("Content-Type", "application/json")
-      .end(new JsonObject().put("message", "success").encode()));
+      // 错误处理
+      setupErrorHandlers(router);
 
-    // Set up global error handlers
-    setupErrorHandlers(router);
+      return router;
+    }
 
-    // Health check endpoint
-    router.route("/healthz").handler(ctx -> {
-      JsonObject responseObject = new JsonObject();
-      JsonObject dbStatus = new JsonObject();
-      JsonObject valKeyStatus = new JsonObject();
+  private void handleHealthCheck(RoutingContext ctx) {
+    JsonObject responseObject = new JsonObject();
 
-      // 执行数据库查询
-      try (EntityManagerFactory entityManager = dbHelper.getEntityManagerFactory()) {
-        entityManager.createEntityManager().createNativeQuery("SELECT 1").getSingleResult();
-      } catch (Exception e) {
-        dbStatus.put("success", false)
-          .put("message", "Failed to connect to database.");
-      }
-
-      // 执行 valkey 查询
-      ValKeyManager valKeyManager = ValKeyManager.getInstance();
-      var key = "health@"+System.currentTimeMillis();
-      valKeyManager.set(key, "healthy");
-      if (!"healthy".equals(valKeyManager.get(key))) {
-        valKeyStatus.put("success", false)
-          .put("message", "Failed to connect to ValKey.");
-      } else {
-        valKeyManager.del(key);
-        valKeyStatus.put("success", true)
-          .put("message", "ValKey connection is healthy")
-          .put("key", key)
-          .put("value", "healthy");
-      }
-
-
-      // 数据库连接正常
-      dbStatus.put("success", true)
-        .put("message", "Database connection is healthy");
-
-      // 构建最终的响应对象
-      responseObject.put("status", "ok")
-        .put("message", "Health check passed")
-        .put("database", dbStatus)
-        .put("valkey", valKeyStatus)
-        .put("timestamp", System.currentTimeMillis());
-
-
-      // 在异步回调中发送响应
-      ctx.response()
-        .putHeader("Content-Type", "application/json")
-        .end(responseObject.encode());
-    });
-
-    vertx.createHttpServer().requestHandler(router).listen(8888).onComplete(http -> {
-      if (http.succeeded()) {
-        if (!startPromise.future().isComplete()) { // 检查是否已完成
-          startPromise.complete();
-          System.out.println("HTTP server started on port 8888");
-        }
-      } else {
-        if (!startPromise.future().isComplete()) { // 检查是否已完成
-          startPromise.fail(http.cause());
+    // 检查数据库状态
+    JsonObject dbStatus = new JsonObject();
+    try (Connection connection = dbHelper.getDataSource().getConnection()) {
+      try (PreparedStatement stmt = connection.prepareStatement("SELECT 1")) {
+        ResultSet rs = stmt.executeQuery();
+        if (rs.next() && rs.getInt(1) == 1) {
+          dbStatus.put("success", true).put("message", "Database is healthy.");
+        } else {
+          dbStatus.put("success", false).put("message", "Unexpected query result.");
         }
       }
-    });
+    } catch (SQLException e) {
+      dbStatus.put("success", false).put("message", "Database connection failed: " + e.getMessage());
+      logger.warn("Database health check failed.", e);
+    }
+
+    // 检查 ValKey 状态
+    JsonObject valKeyStatus = new JsonObject();
+    ValKeyManager valKeyManager = ValKeyManager.getInstance();
+    String key = "health@" + System.currentTimeMillis();
+    valKeyManager.set(key, "healthy");
+    if ("healthy".equals(valKeyManager.get(key))) {
+      valKeyStatus.put("success", true).put("message", "ValKey is healthy.");
+      valKeyManager.del(key);
+    } else {
+      valKeyStatus.put("success", false).put("message", "ValKey is not accessible.");
+      logger.warn("ValKey health check failed.");
+    }
+
+    responseObject.put("status", "ok")
+      .put("database", dbStatus)
+      .put("valkey", valKeyStatus)
+      .put("timestamp", System.currentTimeMillis());
+
+    ctx.response().putHeader("Content-Type", "application/json").end(responseObject.encode());
   }
 
   private void setupErrorHandlers(Router router) {
@@ -235,7 +227,5 @@ public class MainVerticle extends AbstractVerticle {
     });
   }
 
-  public DatabaseQueue getDatabaseQueue() {
-    return databaseQueue;
-  }
+
 }
