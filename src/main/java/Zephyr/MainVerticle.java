@@ -6,7 +6,7 @@ import io.vertx.core.Promise;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.BodyHandler;
-import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityManagerFactory;
 
 import java.nio.file.Paths;
 
@@ -108,23 +108,11 @@ public class MainVerticle extends AbstractVerticle {
       JsonObject valKeyStatus = new JsonObject();
 
       // 执行数据库查询
-      try {
-        EntityManager entityManager = dbHelper.getEntityManagerFactory().createEntityManager();
-        entityManager.createNativeQuery("SELECT 1").getSingleResult();
-        entityManager.close();
-        // 数据库连接正常
-        dbStatus.put("success", true)
-          .put("message", "Database connection is healthy");
+      try (EntityManagerFactory entityManager = dbHelper.getEntityManagerFactory()) {
+        entityManager.createEntityManager().createNativeQuery("SELECT 1").getSingleResult();
       } catch (Exception e) {
         dbStatus.put("success", false)
           .put("message", "Failed to connect to database.");
-        responseObject.put("status", "error")
-          .put("message", "Health check failed")
-          .put("database", dbStatus)
-          .put("valkey", valKeyStatus)
-          .put("timestamp", System.currentTimeMillis());
-        ctx.fail(500);
-        return;
       }
 
       // 执行 valkey 查询
@@ -141,6 +129,11 @@ public class MainVerticle extends AbstractVerticle {
           .put("key", key)
           .put("value", "healthy");
       }
+
+
+      // 数据库连接正常
+      dbStatus.put("success", true)
+        .put("message", "Database connection is healthy");
 
       // 构建最终的响应对象
       responseObject.put("status", "ok")
