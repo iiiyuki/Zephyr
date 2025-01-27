@@ -17,40 +17,67 @@ import java.sql.SQLException;
 public class MainVerticle extends AbstractVerticle {
 
   private DatabaseQueue databaseQueue;
+  public static dbHelper dbHelperInstance;
 
   @Override
-  public void start(Promise<Void> startPromise) {
-    // Initialize dbHelper with Vertx instance
-    dbHelper db = new dbHelper(vertx);
-    ValKeyManager valKeyManager = ValKeyManager.getInstance();
-
-    // test valkey connection
-    valKeyManager.set("test", "test");
-    String test = valKeyManager.get("test");
-    if (test == null) {
-      System.err.println("Failed to connect to ValKey.");
-      startPromise.fail("Failed to connect to ValKey.");
-      return;
-    } else if (!"test".equals(test)) {
-      System.err.println("Failed to connect to ValKey.");
-      startPromise.fail("Failed to connect to ValKey.");
-      return;
-    }
-
-    // Initialize the database (create table if not exists)
-    db.init(ar -> {
+  public void start() {
+    dbHelperInstance = new dbHelper(vertx);
+    databaseQueue = new DatabaseQueue(5);
+    dbHelperInstance.init(ar -> {
       if (ar.succeeded()) {
         System.out.println("Database initialized successfully.");
-        setupHttpServer(startPromise, db);
+        setupHttpServer(Promise.promise(), dbHelperInstance);
       } else {
         System.err.println("Failed to initialize database: " + ar.cause().getMessage());
-        startPromise.fail(ar.cause());
       }
     });
-
-    // Initialize DatabaseQueue
-    databaseQueue = new DatabaseQueue(5);
   }
+
+  @Override
+  public void stop() {
+    if (dbHelperInstance != null) {
+      dbHelperInstance.close();
+    }
+  }
+
+  public static dbHelper getDbHelperInstance() {
+    return dbHelperInstance;
+  }
+
+//  @Override
+//  public void start(Promise<Void> startPromise) {
+//    // Initialize dbHelper with Vertx instance
+//    dbHelper db = new dbHelper(vertx);
+//    entityManager = dbHelper.getEntityManagerFactory().createEntityManager();
+//    ValKeyManager valKeyManager = ValKeyManager.getInstance();
+//
+//    // test valkey connection
+//    valKeyManager.set("test", "test");
+//    String test = valKeyManager.get("test");
+//    if (test == null) {
+//      System.err.println("Failed to connect to ValKey.");
+//      startPromise.fail("Failed to connect to ValKey.");
+//      return;
+//    } else if (!"test".equals(test)) {
+//      System.err.println("Failed to connect to ValKey.");
+//      startPromise.fail("Failed to connect to ValKey.");
+//      return;
+//    }
+//
+//    // Initialize the database (create table if not exists)
+//    db.init(ar -> {
+//      if (ar.succeeded()) {
+//        System.out.println("Database initialized successfully.");
+//        setupHttpServer(startPromise, db);
+//      } else {
+//        System.err.println("Failed to initialize database: " + ar.cause().getMessage());
+//        startPromise.fail(ar.cause());
+//      }
+//    });
+//
+//    // Initialize DatabaseQueue
+//    databaseQueue = new DatabaseQueue(5);
+//  }
 
   private void setupHttpServer(Promise<Void> startPromise, dbHelper db) {
     // Create the main Router
@@ -109,7 +136,7 @@ public class MainVerticle extends AbstractVerticle {
 
       // 执行数据库查询
       try {
-        db.getConnection().createStatement().executeQuery("SELECT 1");
+        dbHelperInstance.getConnection().createStatement().executeQuery("SELECT 1");
       } catch (SQLException e) {
         throw new RuntimeException(e);
       }

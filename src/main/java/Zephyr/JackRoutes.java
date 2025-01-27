@@ -18,6 +18,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 
+import static Zephyr.MainVerticle.dbHelperInstance;
+
+
 /**
  * @author Jingyu Wang
  */
@@ -143,18 +146,18 @@ public class JackRoutes {
     //转化为JSON对象
     JsonObject object = body.asJsonObject();
     String keyword = object.getString("input");
-    EntityManager entityManager = dbHelper.getEntityManagerFactory().createEntityManager();
+    EntityManager entityManager = dbHelperInstance.getEntityManager();
     //提取所有已知的可疑关键词
     List<AcceptedSequences> acceptedSequences =
       entityManager
         .createQuery("SELECT a FROM AcceptedSequences a", AcceptedSequences.class)
         .getResultList();
     //如关键词已存在，则增加它的权重1,并返回
-    for(int i=0;i<acceptedSequences.size();i++){
-      if(acceptedSequences.get(i).getList().getFirst().equals(keyword)){
-        acceptedSequences.get(i).setRate(acceptedSequences.get(i).getRate()+1);
+    for (AcceptedSequences acceptedSequence : acceptedSequences) {
+      if (acceptedSequence.getList().getFirst().equals(keyword)) {
+        acceptedSequence.setRate(acceptedSequence.getRate() + 1);
         entityManager.getTransaction().begin();
-        entityManager.persist(acceptedSequences.get(i));
+        entityManager.persist(acceptedSequence);
         entityManager.getTransaction().commit();
         entityManager.close();
         JsonObject response = new JsonObject()
@@ -168,9 +171,9 @@ public class JackRoutes {
         return;
       }
     }
-    entityManager.close();
-    entityManager = dbHelper.getEntityManagerFactory().createEntityManager();
+
     //遍历完成仍不存在，存入新关键词
+    entityManager = dbHelperInstance.getEntityManager();
     try {
       // Begin a transaction
       entityManager.getTransaction().begin();
@@ -212,7 +215,7 @@ public class JackRoutes {
   //关键词检测器 A naive approach of a text-based fraud detector.
   private void handleFileUpload(RoutingContext ctx, FileUpload u){
     Path path = Paths.get("Zephyr", "uploads", u.uploadedFileName());
-    EntityManager entityManager = dbHelper.getEntityManagerFactory().createEntityManager();
+    EntityManager entityManager = dbHelperInstance.getEntityManager();
     try {
       // Begin a transaction
       entityManager.getTransaction().begin();
@@ -246,7 +249,7 @@ public class JackRoutes {
       // Close the entity manager
       entityManager.close();
     }
-    entityManager = dbHelper.getEntityManagerFactory().createEntityManager();
+    entityManager = dbHelperInstance.getEntityManager();
     //提取指定文件
     List<Uploads> uploads = entityManager.createQuery
         ("SELECT filePath FROM Uploads WHERE processed = FALSE", Uploads.class).getResultList();
@@ -276,24 +279,30 @@ public class JackRoutes {
             .putHeader("Content-Type", "application/json")
             .end(response.encode());
         }
-        upload.setProcessed(true);
         //处理结束, 文件在DB改为可覆盖状态，被BodyHandler从文件夹移除(Line:48)
+        upload.setProcessed(true);
+        entityManager.close();
       }
     }
     //遍历列表后仍未发现指定文件，处理失败
     ctx.fail(404);
+    entityManager.close();
   }
 
   private int[] processFile(String path) {
-    /*施工中*/
     int res = 0;
     int lines = 0;
     List<AcceptedSequences> acceptedSequences;
-    try (EntityManager entityManager = dbHelper.getEntityManagerFactory().createEntityManager()) {
+    try {
+      EntityManager entityManager = dbHelperInstance.getEntityManager();
       //提取所有已知的可疑关键词
       acceptedSequences = entityManager
         .createQuery("SELECT a FROM AcceptedSequences a", AcceptedSequences.class)
         .getResultList();
+      entityManager.close();
+    }
+    catch (Exception e){
+      throw new RuntimeException(e);
     }
     String line;
     try{
@@ -314,27 +323,13 @@ public class JackRoutes {
     return new int[]{res, lines};
   }
 
-  private void submitKeyWord(String keyword){
-    EntityManager entityManager = dbHelper.getEntityManagerFactory().createEntityManager();
-    //提取所有已知的可疑关键词
-    List<AcceptedSequences> acceptedSequences =
-      entityManager
-        .createQuery("SELECT a From AcceptedSequences a", AcceptedSequences.class)
-        .getResultList();
-    for (AcceptedSequences acceptedSequences1: acceptedSequences){
-      if(acceptedSequences1.getList().getFirst().equals(keyword)){
-
-      }
-    }
-  }
-
   // orm test
   private void testOrm(RoutingContext ctx) {
     // 假设要查找或更新 ID 为 1 的实体
     Long id = 1L;
 
     // Get the entity manager
-    EntityManager entityManager = dbHelper.getEntityManagerFactory().createEntityManager();
+    EntityManager entityManager = dbHelperInstance.getEntityManager();
 
     try {
       // Begin a transaction
@@ -373,8 +368,7 @@ public class JackRoutes {
     }
 
     // 新EntityManager
-    entityManager = dbHelper.getEntityManagerFactory().createEntityManager();
-
+    entityManager = dbHelperInstance.getEntityManager();
     // 从数据库中查询所有服务
     List<Service> services = entityManager.createQuery("SELECT s FROM Service s", Service.class).getResultList();
     JsonObject response = new JsonObject()
@@ -382,10 +376,10 @@ public class JackRoutes {
       .put("message", "Test ORM Success")
       .put("timestamp", System.currentTimeMillis())
       .put("services", services);
-    entityManager.close();
     ctx.response()
       .putHeader("Content-Type", "application/json")
       .end(response.encode());
+    entityManager.close();
   }
 }
 
