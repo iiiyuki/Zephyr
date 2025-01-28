@@ -25,7 +25,7 @@ val hibernateEntityManagerVersion = "5.6.15.Final"
 val hikariCPVersion = "6.2.1"
 val mysqlConnectorVersion = "8.0.33"
 val valkeyVersion = "5.3.0"
-val log4jVersion = "2.17.1"
+val log4jVersion = "2.24.3"
 
 val mainVerticleName = "Zephyr.MainVerticle"
 val launcherClassName = "io.vertx.core.Launcher"
