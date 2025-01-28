@@ -22,8 +22,8 @@ import java.util.Map;
  * @author binaryYuki
  */
 public class dbHelper {
-  private final HikariDataSource dataSource;
-  private static EntityManagerFactory entityManagerFactory = getEntityManagerFactory();
+  private static HikariDataSource dataSource;
+  private static EntityManagerFactory entityManagerFactory;
 
   /**
    * Constructor for dbHelper.
@@ -41,10 +41,9 @@ public class dbHelper {
     config.setJdbcUrl("jdbc:mysql://" + dotenv.get("DB_HOST") + ":" + dotenv.get("DB_PORT") + "/" + dotenv.get("DB_NAME"));
     config.setUsername(dotenv.get("DB_USER"));
     config.setPassword(dotenv.get("DB_PWD"));
-    config.setMaximumPoolSize(5);
+    config.setMaximumPoolSize(2);
 
-    // Create the HikariCP data source
-    this.dataSource = new HikariDataSource(config);
+    dataSource = new HikariDataSource(config);
 
     Map<String, String> properties = new HashMap<>();
     properties.put("jakarta.persistence.jdbc.url", dotenv.get("DB_URL"));
@@ -59,8 +58,24 @@ public class dbHelper {
     flyway.migrate();
   }
 
-  public static EntityManagerFactory getEntityManagerFactory() {
+  public static synchronized EntityManagerFactory getEntityManagerFactory() {
+    if (entityManagerFactory == null || !entityManagerFactory.isOpen()) {
+      Dotenv dotenv = Dotenv.load();
+      Map<String, String> properties = new HashMap<>();
+      properties.put("jakarta.persistence.jdbc.url", dotenv.get("DB_URL"));
+      properties.put("jakarta.persistence.jdbc.user", dotenv.get("DB_USER"));
+      properties.put("jakarta.persistence.jdbc.password", dotenv.get("DB_PASSWORD"));
+
+      // 创建 EntityManagerFactory
+      entityManagerFactory = Persistence.createEntityManagerFactory("ZephyrPU", properties);
+    }
     return entityManagerFactory;
+  }
+
+  public static void closeEntityManagerFactory() {
+    if (entityManagerFactory != null && entityManagerFactory.isOpen()) {
+      entityManagerFactory.close();
+    }
   }
 
   /**
@@ -71,6 +86,11 @@ public class dbHelper {
    */
   public Connection getConnection() throws SQLException {
     return dataSource.getConnection();
+  }
+
+  // get datasource
+  public static HikariDataSource getDataSource() {
+    return dataSource;
   }
 
   /**
