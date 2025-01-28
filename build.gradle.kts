@@ -25,6 +25,7 @@ val hibernateEntityManagerVersion = "5.6.15.Final"
 val hikariCPVersion = "6.2.1"
 val mysqlConnectorVersion = "8.0.33"
 val valkeyVersion = "5.3.0"
+val log4jVersion = "2.24.3"
 
 val mainVerticleName = "Zephyr.MainVerticle"
 val launcherClassName = "io.vertx.core.Launcher"
@@ -58,9 +59,10 @@ dependencies {
   implementation("com.zaxxer:HikariCP:$hikariCPVersion")
   implementation("com.fasterxml.jackson.core:jackson-databind:2.18.2")
   implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.18.2")
-  implementation("org.hibernate:hibernate-c3p0:$hibernateCoreVersion")
   implementation("mysql:mysql-connector-java:$mysqlConnectorVersion")
   implementation("io.valkey:valkey-java:$valkeyVersion")
+  implementation("org.apache.logging.log4j:log4j-api:$log4jVersion")
+  implementation("org.apache.logging.log4j:log4j-core:$log4jVersion")
   testImplementation("io.vertx:vertx-junit5")
   testImplementation("org.junit.jupiter:junit-jupiter:$junitJupiterVersion")
 }
