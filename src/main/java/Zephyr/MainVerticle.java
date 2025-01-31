@@ -10,7 +10,6 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
-import jakarta.persistence.EntityManagerFactory;
 
 import java.nio.file.Paths;
 import java.sql.Connection;
@@ -23,74 +22,60 @@ import java.sql.SQLException;
  * @author binaryYuki
  */
 public class MainVerticle extends AbstractVerticle {
-
-
-  private DatabaseQueue databaseQueue;
+  private static final Logger logger = LoggerFactory.getLogger(MainVerticle.class);
   public static dbHelper dbHelperInstance;
-
   @Override
-  public void start() {
+  public void start(Promise<Void> startPromise) {
+    logger.info("Starting MainVerticle initialization...");
+
+    // 初始化 dbHelper 和 ValKey
+    initializeServices()
+      .compose(v -> {
+        // 配置 HTTP 服务器
+        Router router = setupHttpServer();
+        vertx.createHttpServer()
+          .requestHandler(router)
+          .listen(8888);
+        return Future.succeededFuture();
+      })
+      .onSuccess(ok -> {
+        startPromise.complete();
+        logger.info("MainVerticle started successfully.");
+      })
+      .onFailure(err -> {
+        startPromise.fail(err);
+        logger.error("Failed to start MainVerticle: {}");
+
+      });
+  }
+
+  private Future<Void> initializeServices() {
+    Promise<Void> promise = Promise.promise();
+
     dbHelperInstance = new dbHelper(vertx);
-    databaseQueue = new DatabaseQueue(5);
+    ValKeyManager valKeyManager = ValKeyManager.getInstance();
+
+    // 测试 ValKey 连接
+    valKeyManager.set("test", "test");
+    String test = valKeyManager.get("test");
+    if (!"test".equals(test)) {
+      logger.error("Failed to connect to ValKey. Value mismatch.");
+      promise.fail("Failed to connect to ValKey");
+    } else {
+      logger.info("ValKey initialized and verified successfully.");
+    }
+
+    // 初始化数据库
     dbHelperInstance.init(ar -> {
       if (ar.succeeded()) {
-        System.out.println("Database initialized successfully.");
-        setupHttpServer(Promise.promise(), dbHelperInstance);
+        logger.info("Database initialized successfully.");
+        promise.complete();
       } else {
-        System.err.println("Failed to initialize database: " + ar.cause().getMessage());
-
+        logger.error("Database initialization failed: {}" + ar.cause().getMessage());
+        promise.fail(ar.cause());
       }
     });
-  }
 
-
-  @Override
-  public void stop() {
-    if (dbHelperInstance != null) {
-      dbHelperInstance.close();
-    }
-  }
-
-  public static dbHelper getDbHelperInstance() {
-    return dbHelperInstance;
-  }
-
-//  @Override
-//  public void start(Promise<Void> startPromise) {
-//    // Initialize dbHelper with Vertx instance
-//    dbHelper db = new dbHelper(vertx);
-//    entityManager = dbHelper.getEntityManagerFactory().createEntityManager();
-//    ValKeyManager valKeyManager = ValKeyManager.getInstance();
-//
-//    // test valkey connection
-//    valKeyManager.set("test", "test");
-//    String test = valKeyManager.get("test");
-//    if (test == null) {
-//      System.err.println("Failed to connect to ValKey.");
-//      startPromise.fail("Failed to connect to ValKey.");
-//      return;
-//    } else if (!"test".equals(test)) {
-//      System.err.println("Failed to connect to ValKey.");
-//      startPromise.fail("Failed to connect to ValKey.");
-//      return;
-//    }
-//
-//    // Initialize the database (create table if not exists)
-//    db.init(ar -> {
-//      if (ar.succeeded()) {
-//        System.out.println("Database initialized successfully.");
-//        setupHttpServer(startPromise, db);
-//      } else {
-//        System.err.println("Failed to initialize database: " + ar.cause().getMessage());
-//        startPromise.fail(ar.cause());
-//      }
-//    });
-//
-//    // Initialize DatabaseQueue
-//    databaseQueue = new DatabaseQueue(5);
-//  }
-
-  private void setupHttpServer(Promise<Void> startPromise, dbHelper db) {
     return promise.future();
   }
 
@@ -108,56 +93,26 @@ public class MainVerticle extends AbstractVerticle {
 
     // 添加 BodyHandler
     router.route().handler(BodyHandler.create()
-        .setBodyLimit(50_000)
-        .setDeleteUploadedFilesOnEnd(true)
-        .setHandleFileUploads(true)
-        .setUploadsDirectory(Paths.get("Zephyr", "uploads").toString())
-        .setMergeFormAttributes(true)
-      );
+      .setBodyLimit(50_000)
+      .setDeleteUploadedFilesOnEnd(true)
+      .setHandleFileUploads(true)
+      .setUploadsDirectory(Paths.get("Zephyr", "uploads").toString())
+      .setMergeFormAttributes(true)
+    );
 
-      // 配置子路由
-      router.route("/api/jack/*").subRouter(new JackRoutes(vertx).getSubRouter());
-      router.route("/api/austin/*").subRouter(new AustinRoutes(vertx).getSubRouter());
-      router.route("/api/v1/*").subRouter(new YukiRoutes(vertx).getSubRouter());
-
-
-    // Create Jack and Austin route instances
-    JackRoutes jackRoutes = new JackRoutes(vertx);
-    AustinRoutes austinRoutes = new AustinRoutes(vertx);
-
-    // Mount sub-routers to "/api/jack" and "/api/austin"
-    router.route("/api/jack/*").subRouter(jackRoutes.getSubRouter());
-    router.route("/api/austin/*").subRouter(austinRoutes.getSubRouter());
+    // 配置子路由
+    router.route("/api/jack/*").subRouter(new JackRoutes(vertx).getSubRouter());
+    router.route("/api/austin/*").subRouter(new AustinRoutes(vertx).getSubRouter());
     router.route("/api/v1/*").subRouter(new YukiRoutes(vertx).getSubRouter());
-    router.route("/api").handler(ctx -> ctx.response()
-      .putHeader("Content-Type", "application/json")
-      .end(new JsonObject().put("message", "success").encode()));
 
-    // Set up global error handlers
+    // 添加健康检查路由
+    router.get("/healthz").handler(this::handleHealthCheck);
+
+    // 错误处理
     setupErrorHandlers(router);
 
-    // Health check endpoint
-    router.route("/healthz").handler(ctx -> {
-      JsonObject responseObject = new JsonObject();
-      JsonObject dbStatus = new JsonObject();
-      JsonObject valKeyStatus = new JsonObject();
-
-      // 执行数据库查询
-      try {
-        dbHelperInstance.getConnection().createStatement().executeQuery("SELECT 1");
-      } catch (SQLException e) {
-        throw new RuntimeException(e);
-      }
-
-      // 添加健康检查路由
-      router.get("/healthz").handler(this::handleHealthCheck);
-
-
-      // 错误处理
-      setupErrorHandlers(router);
-
-      return router;
-    }
+    return router;
+  }
 
   private void handleHealthCheck(RoutingContext ctx) {
     JsonObject responseObject = new JsonObject();

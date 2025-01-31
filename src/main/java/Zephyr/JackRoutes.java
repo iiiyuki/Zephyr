@@ -145,7 +145,7 @@ public class JackRoutes {
     RequestBody body = ctx.body();
     //转化为JSON对象
     JsonObject object = body.asJsonObject();
-    String keyword = object.getString("input");
+    String keyword = object.getString("input").toLowerCase();
     EntityManager entityManager = dbHelperInstance.getEntityManager();
     //提取所有已知的可疑关键词
     List<AcceptedSequences> acceptedSequences =
