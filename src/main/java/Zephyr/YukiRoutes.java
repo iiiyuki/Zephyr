@@ -4,12 +4,16 @@ import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
+import jakarta.persistence.EntityManagerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author binaryYuki
  */
 public class YukiRoutes {
 
+  private static final Logger log = LoggerFactory.getLogger(YukiRoutes.class);
   private final Vertx vertx;
 
   // 构造函数，接收 Vert.x 实例
@@ -47,6 +51,14 @@ public class YukiRoutes {
 
   // 处理 "/api/v1/status" 路径的逻辑
   private void handleStatus(RoutingContext ctx) {
+    EntityManagerFactory entityManager = dbHelper.getEntityManagerFactory();
+    try {
+      entityManager.createEntityManager().createNativeQuery("SELECT 1").getSingleResult();
+    } catch (Exception e) {
+      ctx.fail(500);
+      throw new RuntimeException(e);
+    }
+    log.info("app's status is good!"+System.currentTimeMillis());
     JsonObject response = new JsonObject()
       .put("status", "ok")
       .put("message", "Austin's status is good!")
