@@ -125,39 +125,59 @@ public class JackRoutes {
       .end(response.encode());
   }
 
-  private void handleKeywordSubmit(RoutingContext ctx){
-    //获取请求体
-    RequestBody body = ctx.body();
-    //转化为JSON对象
-    JsonObject object = body.asJsonObject();
+  private void handleKeywordSubmit(RoutingContext ctx) {
+    // 获取请求体
+    JsonObject object = ctx.body().asJsonObject();
     String keyword = object.getString("input").toLowerCase();
     JsonObject updateBias = new JsonObject();
+
     try (Connection connection = dbHelper.getDataSource().getConnection()) {
-      try (PreparedStatement stmt = connection.prepareStatement("SELECT * FROM accepted_sequences")) {
-        ResultSet rs = stmt.executeQuery();
-        System.out.println(rs);
-        while (rs.next()) {
-          System.out.println(rs.getString("content"));
-          if (rs.getString("content").equals(keyword)) {
-            rs.updateInt("rate", rs.getInt("rate") + 1);
-            updateBias.put("success", true).put("content", keyword).put("timestamp", System.currentTimeMillis());
-            return;
+      // 首先检查是否已经有匹配的记录
+      String selectQuery = "SELECT rate FROM accepted_sequences WHERE content = ?";
+      try (PreparedStatement selectStmt = connection.prepareStatement(selectQuery)) {
+        selectStmt.setString(1, keyword);
+        ResultSet rs = selectStmt.executeQuery();
+
+        if (rs.next()) {
+          // 如果记录已存在，更新 rate
+          int newRate = rs.getInt("rate") + 1;
+          String updateQuery = "UPDATE accepted_sequences SET rate = ?, last_updated_at = ? WHERE content = ?";
+          try (PreparedStatement updateStmt = connection.prepareStatement(updateQuery)) {
+            updateStmt.setInt(1, newRate);
+            updateStmt.setLong(2, System.currentTimeMillis());
+            updateStmt.setString(3, keyword);
+            updateStmt.executeUpdate();
           }
+
+          updateBias.put("success", true)
+            .put("content", keyword)
+            .put("rate", newRate)
+            .put("timestamp", System.currentTimeMillis());
+        } else {
+          // 如果记录不存在，插入新记录
+          String insertQuery = "INSERT INTO accepted_sequences (content, rate, created_at, last_updated_at) VALUES (?, ?, ?, ?)";
+          try (PreparedStatement insertStmt = connection.prepareStatement(insertQuery)) {
+            insertStmt.setString(1, keyword);
+            insertStmt.setInt(2, 1);
+            insertStmt.setLong(3, System.currentTimeMillis());
+            insertStmt.setLong(4, System.currentTimeMillis());
+            insertStmt.executeUpdate();
+          }
+
+          updateBias.put("success", true)
+            .put("content", keyword)
+            .put("rate", 1)
+            .put("timestamp", System.currentTimeMillis());
         }
-        rs.moveToInsertRow();
-        rs.updateString("content", keyword);
-        rs.updateInt("rate", 1);
-        rs.updateString("created_at", System.currentTimeMillis() + "");
-        rs.updateString("last_updated_at", System.currentTimeMillis() + "");
-        rs.insertRow();
-        updateBias.put("success", true).put("content", keyword).put("timestamp", System.currentTimeMillis());
-      }
-      catch (SQLException e) {
-        updateBias.put("success", false).put("message", "Database connection failed: " + e.getMessage());
       }
     } catch (SQLException e) {
-      updateBias.put("success", false).put("message", "Database connection failed: " + e.getMessage());
+      updateBias.put("success", false).put("message", "Database error: " + e.getMessage());
     }
+
+    // 将结果返回给客户端
+    ctx.response()
+      .putHeader("Content-Type", "application/json")
+      .end(updateBias.encode());
   }
 
   //关键词检测器 A naive approach of a text-based fraud detector.
