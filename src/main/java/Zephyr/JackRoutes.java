@@ -60,7 +60,7 @@ public class JackRoutes {
     );
 
     router.post("/analyze/text/uploads").handler(ctx -> {
-      ctx.fail(402);
+      ctx.fail(501);
 //      List<FileUpload> uploads = ctx.fileUploads();
 //      for(FileUpload u:uploads){
 //        String fileName = u.fileName();
