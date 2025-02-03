@@ -16,6 +16,10 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.*;
 
 import static Zephyr.MainVerticle.dbHelperInstance;
@@ -86,25 +90,6 @@ public class JackRoutes {
           </form>""");
     });
 
-    router.post("/analyze/text/uploads").handler(ctx -> {
-      List<FileUpload> uploads = ctx.fileUploads();
-      for(FileUpload u:uploads){
-        String fileName = u.fileName();
-        String tail = fileName.substring(fileName.lastIndexOf("."));
-        if ("text/plain".equals(u.contentType())
-          &&".txt".equals(tail)
-          &&"UTF-8".equals(u.charSet())
-          &&u.size()<=50000)
-          //校验通过，开始处置
-        {
-          handleFileUpload(ctx, u);
-        } else{
-          //校验不通过，强制删除
-          ctx.fail(400);
-
-        }
-      }
-    });
 
     /**
      * 添加一个关键词
@@ -146,69 +131,32 @@ public class JackRoutes {
     //转化为JSON对象
     JsonObject object = body.asJsonObject();
     String keyword = object.getString("input").toLowerCase();
-    EntityManager entityManager = dbHelperInstance.getEntityManager();
-    //提取所有已知的可疑关键词
-    List<AcceptedSequences> acceptedSequences =
-      entityManager
-        .createQuery("SELECT a FROM AcceptedSequences a", AcceptedSequences.class)
-        .getResultList();
-    //如关键词已存在，则增加它的权重1,并返回
-    for (AcceptedSequences acceptedSequence : acceptedSequences) {
-      if (acceptedSequence.getList().getFirst().equals(keyword)) {
-        acceptedSequence.setRate(acceptedSequence.getRate() + 1);
-        entityManager.getTransaction().begin();
-        entityManager.persist(acceptedSequence);
-        entityManager.getTransaction().commit();
-        entityManager.close();
-        JsonObject response = new JsonObject()
-          .put("status", "uploaded")
-          .put("content", keyword)
-          .put("timestamp", System.currentTimeMillis());
-
-        ctx.response()
-          .putHeader("Content-Type", "application/json")
-          .end(response.encode());
-        return;
+    JsonObject updateBias = new JsonObject();
+    try (Connection connection = dbHelper.getDataSource().getConnection()) {
+      try (PreparedStatement stmt = connection.prepareStatement("SELECT * FROM accepted_sequences")) {
+        ResultSet rs = stmt.executeQuery();
+        System.out.println(rs);
+        while (rs.next()) {
+          System.out.println(rs.getString("content"));
+          if (rs.getString("content").equals(keyword)) {
+            rs.updateInt("rate", rs.getInt("rate") + 1);
+            updateBias.put("success", true).put("content", keyword).put("timestamp", System.currentTimeMillis());
+            return;
+          }
+        }
+        rs.moveToInsertRow();
+        rs.updateString("content", keyword);
+        rs.updateInt("rate", 1);
+        rs.updateString("created_at", System.currentTimeMillis() + "");
+        rs.updateString("last_updated_at", System.currentTimeMillis() + "");
+        rs.insertRow();
+        updateBias.put("success", true).put("content", keyword).put("timestamp", System.currentTimeMillis());
       }
-    }
-
-    //遍历完成仍不存在，存入新关键词
-    entityManager = dbHelperInstance.getEntityManager();
-    try {
-      // Begin a transaction
-      entityManager.getTransaction().begin();
-
-      // 创建一个新AcceptedSequences对象
-
-      AcceptedSequences newSequence = new AcceptedSequences();
-      newSequence.setContent(keyword);
-      newSequence.setTimeStampString(""+System.currentTimeMillis());
-      newSequence.setRate(1);
-      newSequence.setCreatedAt(""+System.currentTimeMillis()
-      );
-      // Persist the new sequence
-      entityManager.persist(newSequence);
-
-      // Commit the transaction
-      entityManager.getTransaction().commit();
-    } catch (Exception e) {
-      // Rollback the transaction in case of errors
-      if (entityManager.getTransaction().isActive()) {
-        entityManager.getTransaction().rollback();
+      catch (SQLException e) {
+        updateBias.put("success", false).put("message", "Database connection failed: " + e.getMessage());
       }
-      ctx.response().setStatusCode(500).end("Error: " + e.getMessage());
-    } finally {
-      // Close the entity manager
-      entityManager.close();
-      //return response
-      JsonObject response = new JsonObject()
-        .put("status", "uploaded")
-        .put("content", keyword)
-        .put("timestamp", System.currentTimeMillis());
-
-      ctx.response()
-        .putHeader("Content-Type", "application/json")
-        .end(response.encode());
+    } catch (SQLException e) {
+      updateBias.put("success", false).put("message", "Database connection failed: " + e.getMessage());
     }
   }
 
