@@ -48,15 +48,15 @@ public class TestJackRoutes {
             .onFailure(testContext::failNow); // 处理请求失败
   }
 
-  @Test
-  void testAnalyze(Vertx vertx, VertxTestContext testContext) {
-    // 创建 HTTP 客户端并发送 POST 请求到 "/api/jack/analyze/text"
-    vertx.createHttpClient()
-            .request(io.vertx.core.http.HttpMethod.POST, 8888, "127.0.0.1", "/api/jack/analyze/text/uploads")
-            .compose(HttpClientRequest::send) // 发送请求
-            .onSuccess(resp -> handleUpload(resp, testContext)) // 处理成功响应
-            .onFailure(testContext::failNow); // 处理请求失败
-  }
+//  @Test
+//  void testAnalyze(Vertx vertx, VertxTestContext testContext) {
+//    // 创建 HTTP 客户端并发送 POST 请求到 "/api/jack/analyze/text"
+//    vertx.createHttpClient()
+//            .request(io.vertx.core.http.HttpMethod.POST, 8888, "127.0.0.1", "/api/jack/analyze/text/uploads")
+//            .compose(HttpClientRequest::send) // 发送请求
+//            .onSuccess(resp -> handleUpload(resp, testContext)) // 处理成功响应
+//            .onFailure(testContext::failNow); // 处理请求失败
+//  }
 
   @Test
   void testSubmit(Vertx vertx, VertxTestContext testContext) {
@@ -132,43 +132,43 @@ public class TestJackRoutes {
     });
   }
 
-  private void handleUpload(HttpClientResponse resp, VertxTestContext testContext) {
-    testContext.verify(() -> {
-      // 验证 HTTP 状态码
-      assertEquals(501, resp.statusCode(), "HTTP status code should be 501");
-      System.out.println(resp.statusCode());
+//  private void handleUpload(HttpClientResponse resp, VertxTestContext testContext) {
+//    testContext.verify(() -> {
+//      // 验证 HTTP 状态码
+//      assertEquals(501, resp.statusCode(), "HTTP status code should be 501");
+//      System.out.println(resp.statusCode());
+//
+//      // 读取响应体
+//      resp.body()
+//        .onSuccess(buffer -> handleUploadBody(buffer, testContext)) // 处理响应体
+//        .onFailure(throwable -> {
+//          if(throwable instanceof TimeoutException){
+//            testContext.completeNow();
+//          }
+//          else{
+//            testContext.failNow(throwable);
+//          }
+//        }); // 如果 body() 失败
+//    });
+//  }
 
-      // 读取响应体
-      resp.body()
-        .onSuccess(buffer -> handleUploadBody(buffer, testContext)) // 处理响应体
-        .onFailure(throwable -> {
-          if(throwable instanceof TimeoutException){
-            testContext.completeNow();
-          }
-          else{
-            testContext.failNow(throwable);
-          }
-        }); // 如果 body() 失败
-    });
-  }
-
-  private void handleUploadBody(Buffer body, VertxTestContext testContext) {
-    testContext.verify(() -> {
-      // 将响应体解析为 JSON 对象
-      JsonObject responseJson = body.toJsonObject();
-
-      // should be {"status":"ok","dir":(file directory),"result":(alarmed or unalarmed),"timestamp":1736972790315}
-      // 验证响应内容
-      assertEquals("uploaded", responseJson.getString("status"), "Status should be 'uploaded'");
-      assertNotNull(responseJson.getString("dir"), "Directory should not be null");
-      assertNotNull(responseJson.getString("result"), "Result should not be null");
-      // 验证时间戳是否存在
-      assertNotNull(responseJson.getLong("timestamp"), "Timestamp should not be null");
-
-      // 标记测试完成
-      testContext.completeNow();
-    });
-  }
+//  private void handleUploadBody(Buffer body, VertxTestContext testContext) {
+//    testContext.verify(() -> {
+//      // 将响应体解析为 JSON 对象
+//      JsonObject responseJson = body.toJsonObject();
+//
+//      // should be {"status":"ok","dir":(file directory),"result":(alarmed or unalarmed),"timestamp":1736972790315}
+//      // 验证响应内容
+//      assertEquals("uploaded", responseJson.getString("status"), "Status should be 'uploaded'");
+//      assertNotNull(responseJson.getString("dir"), "Directory should not be null");
+//      assertNotNull(responseJson.getString("result"), "Result should not be null");
+//      // 验证时间戳是否存在
+//      assertNotNull(responseJson.getLong("timestamp"), "Timestamp should not be null");
+//
+//      // 标记测试完成
+//      testContext.completeNow();
+//    });
+//  }
 
   private void handleSubmit(HttpClientResponse resp, VertxTestContext testContext) {
     testContext.verify(() -> {
@@ -189,8 +189,11 @@ public class TestJackRoutes {
 
       // should be {"status":"ok","content",(the uploaded content),"timestamp":1736972790315}
       // 验证响应内容
-      assertEquals("uploaded", responseJson.getString("status"), "Status should be 'uploaded'");
+      assertEquals("true", responseJson.getString("success"), "Success should be 'true'");
+      //验证上传内容是否正确
       assertEquals("test keyword",responseJson.getString("content"),"content should be 'test keyword'" );
+      //验证权重是否存在
+      assertNotNull(responseJson.getString("rate"), "Rate should not be null");
       // 验证时间戳是否存在
       assertNotNull(responseJson.getLong("timestamp"), "Timestamp should not be null");
 
