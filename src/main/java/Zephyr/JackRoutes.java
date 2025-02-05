@@ -11,15 +11,12 @@ import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.handler.BodyHandler;
 import jakarta.persistence.EntityManager;
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
+
+import java.io.*;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.*;
 
 import static Zephyr.MainVerticle.dbHelperInstance;
@@ -56,28 +53,27 @@ public class JackRoutes {
       .setDeleteUploadedFilesOnEnd(true)
       .setHandleFileUploads(true)
       .setUploadsDirectory(Paths.get("Zephyr", "uploads").toString())
-      .setMergeFormAttributes(true)
     );
 
     router.post("/analyze/text/uploads").handler(ctx -> {
-      ctx.fail(501);
-//      List<FileUpload> uploads = ctx.fileUploads();
-//      for(FileUpload u:uploads){
-//        String fileName = u.fileName();
-//        String tail = fileName.substring(fileName.lastIndexOf("."));
-//        if ("text/plain".equals(u.contentType())
-//          &&".txt".equals(tail)
-//          &&"UTF-8".equals(u.charSet())
-//          &&u.size()<=50000)
-//          //校验通过，开始处置
-//        {
-//          handleFileUpload(ctx, u);
-//        } else{
-//          //校验不通过，强制删除
-//          ctx.fail(400);
-//
-//        }
-//      }
+      List<FileUpload> fileUploads = ctx.fileUploads();
+      if (fileUploads == null || fileUploads.size() != 1) {
+        JsonObject response = new JsonObject()
+          .put("status", "error")
+          .put("message", "File upload incorrect");
+        ctx.response()
+          .putHeader("Content-Type", "application/json")
+          .setStatusCode(400)
+          .end(response.encode());
+      }
+      else{
+        File f = new File(fileUploads.getFirst().uploadedFileName());
+        try {
+          handleFileUpload(ctx, f);
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        }
+      }
     });
 
     router.get("/analyze/text/uploads").handler(ctx -> {
@@ -181,114 +177,65 @@ public class JackRoutes {
   }
 
   //关键词检测器 A naive approach of a text-based fraud detector.
-  private void handleFileUpload(RoutingContext ctx, FileUpload u){
-    Path path = Paths.get("Zephyr", "uploads", u.uploadedFileName());
-    EntityManager entityManager = dbHelperInstance.getEntityManager();
-    try {
-      // Begin a transaction
-      entityManager.getTransaction().begin();
-
-      // 查找现有的文件
-      Uploads existingFileUpload = entityManager.find(Uploads.class, path.toString());
-      //只有已处理文件才能被覆盖
-      if (existingFileUpload != null && existingFileUpload.getProcessed()) {
-        // 更新现有文件
-        existingFileUpload.setFilePath(path.toString());
-        //刚上传或更新的文件还未被processFile方法处理
-        existingFileUpload.setProcessed(false);
-      } else {
-        // 如果文件不存在，则存入新文件
-        Uploads newUpload = new Uploads();
-        newUpload.setFilePath(path.toString());
-        newUpload.setProcessed(false);
-        entityManager.persist(newUpload);
-      }
-
-      // Commit the transaction
-      entityManager.getTransaction().commit();
-    } catch (Exception e) {
-      // Rollback the transaction in case of errors
-      if (entityManager.getTransaction().isActive()) {
-        entityManager.getTransaction().rollback();
-      }
-      ctx.response().setStatusCode(500).end("Error: " + e.getMessage());
-      return;
-    } finally {
-      // Close the entity manager
-      entityManager.close();
+  private void handleFileUpload(RoutingContext ctx, File f) throws IOException {
+    if(!f.getName().endsWith(".txt")){
+      JsonObject response = new JsonObject()
+        .put("status", "error")
+        .put("message", "File type incorrect");
+      ctx.response()
+        .putHeader("Content-Type", "application/json")
+        .setStatusCode(400)
+        .end(response.encode());
     }
-    entityManager = dbHelperInstance.getEntityManager();
-    //提取指定文件
-    List<Uploads> uploads = entityManager.createQuery
-        ("SELECT filePath FROM Uploads WHERE processed = FALSE", Uploads.class).getResultList();
-    for(Uploads upload:uploads){
-      //如果列表中有指定路径元素，说明提取正确
-      if(upload.getFilePath().equals(path.toString())) {
-        //发现可疑关键词,且全文平均权重超过指定阈值(10)，返回alarmed状态
-        if (processFile(upload.getFilePath())[0]/processFile(upload.getFilePath())[1]>=10) {
-          JsonObject response = new JsonObject()
-            .put("status", "uploaded")
-            .put("dir", path.toString())
-            .put("result", "alarmed")
-            .put("timestamp", System.currentTimeMillis());
-
-          ctx.response()
-            .putHeader("Content-Type", "application/json")
-            .end(response.encode());
-          //如果全文平均权重未超过指定阈值，返回unalarmed状态
-        } else {
-          JsonObject response = new JsonObject()
-            .put("status", "uploaded")
-            .put("dir", path.toString())
-            .put("result", "unalarmed")
-            .put("timestamp", System.currentTimeMillis());
-
-          ctx.response()
-            .putHeader("Content-Type", "application/json")
-            .end(response.encode());
-        }
-        //处理结束, 文件在DB改为可覆盖状态，被BodyHandler从文件夹移除(Line:48)
-        upload.setProcessed(true);
-        entityManager.close();
-      }
-    }
-    //遍历列表后仍未发现指定文件，处理失败
-    ctx.fail(404);
-    entityManager.close();
-  }
-
-  private int[] processFile(String path) {
-    int res = 0;
-    int lines = 0;
-    List<AcceptedSequences> acceptedSequences;
-    try {
-      EntityManager entityManager = dbHelperInstance.getEntityManager();
-      //提取所有已知的可疑关键词
-      acceptedSequences = entityManager
-        .createQuery("SELECT a FROM AcceptedSequences a", AcceptedSequences.class)
-        .getResultList();
-      entityManager.close();
-    }
-    catch (Exception e){
-      throw new RuntimeException(e);
-    }
+    BufferedReader br = new BufferedReader(new FileReader(f));
     String line;
-    try{
-      FileReader reader = new FileReader(path);
-      BufferedReader br = new BufferedReader(reader);
-      while((line = br.readLine())!=null){
-        for (AcceptedSequences sequence: acceptedSequences){
-          if (line.contains(sequence.getList().getFirst())){
-            //全文任何部分发现关键词，视为检测到关键词
-            res+=sequence.getRate();
+    int total = 0;
+    while ((line = br.readLine()) != null) {
+      try (Connection connection = dbHelper.getDataSource().getConnection()) {
+        // 提取所有记录
+        String selectQuery = "SELECT * FROM accepted_sequences";
+        try (PreparedStatement selectStmt = connection.prepareStatement(selectQuery)) {
+          ResultSet rs = selectStmt.executeQuery();
+          rs.first();
+          while(!rs.isLast()){
+            if(line.contains(rs.getString("content"))){
+              total += rs.getInt("rate");
+            }
+            rs.next();
+          }
+          if(rs.isLast()&&line.contains(rs.getString("content"))){
+            total += rs.getInt("rate");
           }
         }
-        lines++;
+      } catch (SQLException e) {
+        JsonObject response = new JsonObject()
+          .put("status", "error")
+          .put("message", "Failed to process the file: " + e.getMessage());
+        ctx.response()
+          .putHeader("Content-Type", "application/json")
+          .end(response.encode());
       }
-    } catch (IOException e) {
-      throw new RuntimeException(e);
     }
-    return new int[]{res, lines};
+    if(total>=20){
+      JsonObject response = new JsonObject()
+        .put("status", "ok")
+        .put("result", "alarmed")
+        .put("timestamp", System.currentTimeMillis());
+
+      ctx.response()
+        .putHeader("Content-Type", "application/json")
+        .end(response.encode());
+    }
+    else{
+      JsonObject response = new JsonObject()
+        .put("status", "ok")
+        .put("result", "unalarmed")
+        .put("timestamp", System.currentTimeMillis());
+
+      ctx.response()
+        .putHeader("Content-Type", "application/json")
+        .end(response.encode());
+    }
   }
 
   // orm test
