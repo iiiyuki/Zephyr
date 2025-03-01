@@ -58,7 +58,7 @@ dependencies {
   implementation("org.hibernate:hibernate-entitymanager:$hibernateEntityManagerVersion")
   implementation("com.zaxxer:HikariCP:$hikariCPVersion")
   implementation("com.fasterxml.jackson.core:jackson-databind:2.18.2")
-  implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.18.2")
+  implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.18.3")
   implementation("mysql:mysql-connector-java:$mysqlConnectorVersion")
   implementation("io.valkey:valkey-java:$valkeyVersion")
   implementation("org.apache.logging.log4j:log4j-api:$log4jVersion")
