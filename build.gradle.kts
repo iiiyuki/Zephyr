@@ -14,7 +14,7 @@ repositories {
   mavenCentral()
 }
 
-val vertxVersion = "4.5.13"
+val vertxVersion = "4.5.14"
 val junitJupiterVersion = "5.12.0"
 val flywayVersion = "11.4.0"
 val dotenvVersion = "3.2.0"
