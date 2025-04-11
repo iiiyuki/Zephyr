@@ -15,7 +15,7 @@ repositories {
 }
 
 val vertxVersion = "4.5.13"
-val junitJupiterVersion = "5.12.0"
+val junitJupiterVersion = "5.12.2"
 val flywayVersion = "11.4.0"
 val dotenvVersion = "3.2.0"
 val nettyVersion = "4.1.118.Final"
